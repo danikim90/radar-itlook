@@ -14,25 +14,30 @@
   <script type="text/babel">
     const { useState } = React;
 
-    const mockProducts = [
-      { id: 1,  name: "Calça Alfaiataria Valentina Preta",       impressions: 872,  clicks: 62,  cart: 10, purchases: 3, ctr: 7.1, img: "https://images.unsplash.com/photo-1594938298603-c8148c4b4e0e?w=120&h=160&fit=crop" },
-      { id: 2,  name: "Calça Alfaiataria Valentina Marinho",     impressions: 4532, clicks: 290, cart: 2,  purchases: 2, ctr: 6.4, img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=120&h=160&fit=crop" },
-      { id: 3,  name: "Calça Alfaiataria Valentina Preta (G)",   impressions: 4473, clicks: 260, cart: 12, purchases: 2, ctr: 5.8, img: "https://images.unsplash.com/photo-1551163943-3f7253a97855?w=120&h=160&fit=crop" },
-      { id: 4,  name: "Calça Alfaiataria Daniele Marinho",       impressions: 553,  clicks: 28,  cart: 5,  purchases: 3, ctr: 5.1, img: "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=120&h=160&fit=crop" },
-      { id: 5,  name: "Calça Alfaiataria Valentina Marrom",      impressions: 3259, clicks: 80,  cart: 11, purchases: 1, ctr: 2.5, img: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=120&h=160&fit=crop" },
-      { id: 6,  name: "Blazer Alfaiataria Valentina Marinho",    impressions: 3039, clicks: 52,  cart: 1,  purchases: 1, ctr: 1.7, img: "https://images.unsplash.com/photo-1591369822096-ffd140ec948f?w=120&h=160&fit=crop" },
-      { id: 7,  name: "Jaqueta Trench Lucia Bordô",              impressions: 2964, clicks: 18,  cart: 3,  purchases: 1, ctr: 0.6, img: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=120&h=160&fit=crop" },
-      { id: 8,  name: "Calça Listrada Daiana Preto",             impressions: 912,  clicks: 4,   cart: 2,  purchases: 1, ctr: 0.4, img: "https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=120&h=160&fit=crop" },
-      { id: 9,  name: "Calça Alfaiataria Coz Verde Musgo",       impressions: 27,   clicks: 0,   cart: 7,  purchases: 4, ctr: 0.0, img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=120&h=160&fit=crop" },
-      { id: 10, name: "Conjunto Malha Karen Bege",               impressions: 284,  clicks: 0,   cart: 1,  purchases: 1, ctr: 0.0, img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=160&fit=crop" },
-      { id: 11, name: "Blusa Crepe Mariana Offwhite",            impressions: 1840, clicks: 9,   cart: 0,  purchases: 0, ctr: 0.5, img: "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=120&h=160&fit=crop" },
-      { id: 12, name: "Calça Wide Leg Patrícia Nude",            impressions: 95,   clicks: 0,   cart: 0,  purchases: 0, ctr: 0.0, img: "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=120&h=160&fit=crop" },
-      { id: 13, name: "Blazer Tweed Sofia Rosa",                 impressions: 2100, clicks: 145, cart: 8,  purchases: 0, ctr: 6.9, img: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=120&h=160&fit=crop" },
-      { id: 14, name: "Calça Reta Helena Caramelo",              impressions: 680,  clicks: 41,  cart: 6,  purchases: 0, ctr: 6.0, img: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=120&h=160&fit=crop" },
-      { id: 15, name: "Blusa Seda Amanda Marfim",                impressions: 44,   clicks: 0,   cart: 0,  purchases: 0, ctr: 0.0, img: "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=120&h=160&fit=crop" },
-    ];
+const [products, setProducts] = React.useState([]);
+const [loading, setLoading] = React.useState(true);
+const [error, setError] = React.useState(null);
 
-    const AVG_CTR = mockProducts.reduce((s, p) => s + p.ctr, 0) / mockProducts.length;
+React.useEffect(() => {
+  fetch("/api/products")
+    .then((res) => res.json())
+    .then((data) => {
+      setProducts(data.products.map((p) => ({
+        id: p.produto,
+        name: p.produto,
+        impressions: p.impressoes ?? 0,
+        clicks: p.cliques ?? 0,
+        cart: p.carrinho ?? 0,
+        purchases: p.compras ?? 0,
+        ctr: p.ctr ?? 0,
+        status: p.status_inteligente ?? "indefinido",
+      })));
+      setLoading(false);
+    })
+    .catch((err) => { setError(err.message); setLoading(false); });
+}, []);
+
+    const AVG_CTR = products.reduce((s, p) => s + p.ctr, 0) / products.length;
 
     function classify(p) {
       const highCTR = p.ctr >= AVG_CTR;
