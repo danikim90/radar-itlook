@@ -14,28 +14,6 @@
   <script type="text/babel">
     const { useState } = React;
 
-const [products, setProducts] = React.useState([]);
-const [loading, setLoading] = React.useState(true);
-const [error, setError] = React.useState(null);
-
-React.useEffect(() => {
-  fetch("/api/products")
-    .then((res) => res.json())
-    .then((data) => {
-      setProducts(data.products.map((p) => ({
-        id: p.produto,
-        name: p.produto,
-        impressions: p.impressoes ?? 0,
-        clicks: p.cliques ?? 0,
-        cart: p.carrinho ?? 0,
-        purchases: p.compras ?? 0,
-        ctr: p.ctr ?? 0,
-        status: p.status_inteligente ?? "indefinido",
-      })));
-      setLoading(false);
-    })
-    .catch((err) => { setError(err.message); setLoading(false); });
-}, []);
 
     const AVG_CTR = products.reduce((s, p) => s + p.ctr, 0) / products.length;
 
@@ -221,7 +199,20 @@ React.useEffect(() => {
 
     function RadarPerformance() {
       const [search, setSearch] = useState("");
-      const products = mockProducts.map(p => ({ ...p, status: classify(p) }));
+      const [products, setProducts] = React.useState([]);
+const [loading, setLoading] = React.useState(true);
+
+React.useEffect(() => {
+  fetch("/api/products")
+    .then(res => res.json())
+    .then(data => {
+      setProducts(data.products.map(p => ({ ...p, name: p.produto, status: classify(p) })));
+      setLoading(false);
+    })
+    .catch(() => setLoading(false));
+}, []);
+
+if (loading) return React.createElement("div", { style: { display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" } }, "Carregando...");
       const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
       const grouped = {};
       ORDER.forEach(k => { grouped[k] = filtered.filter(p => p.status === k); });
