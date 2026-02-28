@@ -1,927 +1,275 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Radar de Performance · IT LOOK</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --black: #0a0a0a;
-    --off-white: #f5f0eb;
-    --gold: #c9a84c;
-    --gold-light: #e8d5a3;
-    --gold-dim: rgba(201,168,76,0.15);
-    --gray: #6b6560;
-    --gray-light: #e8e3de;
-    --surface: #111111;
-    --surface2: #1a1a1a;
-    --border: rgba(201,168,76,0.2);
-
-    --estrela: #c9a84c;
-    --interesse: #e05c2a;
-    --problema: #d4a017;
-    --normal: #7a9cb8;
-    --invisivel: #555555;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--black);
-    color: var(--off-white);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
-    min-height: 100vh;
-  }
-
-  /* ── LOGIN ── */
-  #login-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    gap: 48px;
-    background: var(--black);
-    position: relative;
-    overflow: hidden;
-  }
-
-  #login-screen::before {
-    content: '';
-    position: absolute;
-    width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .login-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.4em;
-    color: var(--gold);
-    text-transform: uppercase;
-  }
-
-  .login-title {
-    text-align: center;
-  }
-
-  .login-title h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(36px, 6vw, 64px);
-    font-weight: 300;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    color: var(--off-white);
-  }
-
-  .login-title h1 em {
-    font-style: italic;
-    color: var(--gold);
-  }
-
-  .login-title p {
-    margin-top: 12px;
-    font-size: 13px;
-    color: var(--gray);
-    letter-spacing: 0.05em;
-  }
-
-  .btn-google {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--off-white);
-    padding: 14px 28px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-google::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--gold-dim);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .btn-google:hover::before { opacity: 1; }
-  .btn-google:hover { border-color: var(--gold); }
-
-  .btn-google svg { flex-shrink: 0; }
-
-  /* ── MAIN APP ── */
-  #app { display: none; }
-
-  header {
-    border-bottom: 1px solid var(--border);
-    padding: 20px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .header-brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 11px;
-    letter-spacing: 0.5em;
-    color: var(--gold);
-    text-transform: uppercase;
-  }
-
-  .header-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 18px;
-    font-weight: 300;
-    letter-spacing: 0.1em;
-    color: var(--off-white);
-  }
-
-  .header-user {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: var(--gray);
-  }
-
-  .user-dot {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--gold-dim);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 14px;
-    color: var(--gold);
-  }
-
-  main { padding: 40px; max-width: 1400px; margin: 0 auto; }
-
-  /* ── KPI CARDS ── */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1px;
-    background: var(--border);
-    margin-bottom: 40px;
-    border: 1px solid var(--border);
-  }
-
-  .kpi-card {
-    background: var(--surface);
-    padding: 24px;
-    position: relative;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .kpi-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 2px;
-    background: transparent;
-    transition: background 0.2s;
-  }
-
-  .kpi-card:hover { background: var(--surface2); }
-  .kpi-card.active::after { background: var(--card-color, var(--gold)); }
-  .kpi-card.active { background: var(--surface2); }
-
-  .kpi-icon { font-size: 20px; margin-bottom: 12px; display: block; }
-
-  .kpi-label {
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--gray);
-    margin-bottom: 8px;
-  }
-
-  .kpi-value {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 40px;
-    font-weight: 300;
-    line-height: 1;
-    color: var(--card-color, var(--off-white));
-  }
-
-  .kpi-sub {
-    font-size: 11px;
-    color: var(--gray);
-    margin-top: 4px;
-  }
-
-  /* ── FILTER BAR ── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .section-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    color: var(--off-white);
-  }
-
-  .filter-pills {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .pill {
-    padding: 6px 16px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--gray);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .pill:hover { border-color: var(--gold); color: var(--off-white); }
-
-  .pill.active {
-    background: var(--gold-dim);
-    border-color: var(--gold);
-    color: var(--gold);
-  }
-
-  /* ── TABLE ── */
-  .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    overflow-x: auto;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  thead th {
-    padding: 14px 20px;
-    text-align: left;
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--gray);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.2s;
-  }
-
-  thead th:hover { color: var(--gold); }
-
-  tbody tr {
-    border-bottom: 1px solid rgba(201,168,76,0.06);
-    transition: background 0.15s;
-  }
-
-  tbody tr:hover { background: var(--surface2); }
-  tbody tr:last-child { border-bottom: none; }
-
-  td {
-    padding: 14px 20px;
-    font-size: 13px;
-    color: var(--off-white);
-    white-space: nowrap;
-  }
-
-  td.produto-cell {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 15px;
-    font-weight: 400;
-    max-width: 260px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  td.num { color: var(--gray-light); font-variant-numeric: tabular-nums; }
-  td.pct { font-variant-numeric: tabular-nums; }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    font-size: 10px;
-    letter-spacing: 0.05em;
-    border: 1px solid currentColor;
-    opacity: 0.9;
-  }
-
-  .badge-estrela    { color: var(--estrela); }
-  .badge-interesse  { color: var(--interesse); }
-  .badge-problema   { color: var(--problema); }
-  .badge-normal     { color: var(--normal); }
-  .badge-invisivel  { color: var(--invisivel); }
-
-  .action-btn {
-    padding: 5px 14px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--gold);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .action-btn:hover {
-    background: var(--gold-dim);
-    border-color: var(--gold);
-  }
-
-  /* ── EMPTY / LOADING ── */
-  .state-msg {
-    text-align: center;
-    padding: 60px;
-    color: var(--gray);
-    font-size: 13px;
-    letter-spacing: 0.05em;
-  }
-
-  .state-msg span {
-    display: block;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 32px;
-    font-weight: 300;
-    color: var(--gold-light);
-    margin-bottom: 8px;
-  }
-
-  /* ── SEARCH ── */
-  .search-wrap {
-    position: relative;
-  }
-
-  input[type="text"] {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--off-white);
-    padding: 10px 16px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    width: 220px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  input[type="text"]::placeholder { color: var(--gray); }
-  input[type="text"]:focus { border-color: var(--gold); }
-
-  /* ── MODAL ── */
-  #modal-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 40px;
-    width: 480px;
-    max-width: 90vw;
-    position: relative;
-  }
-
-  .modal h3 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    font-weight: 300;
-    margin-bottom: 6px;
-    color: var(--off-white);
-  }
-
-  .modal .modal-status {
-    font-size: 11px;
-    color: var(--gray);
-    letter-spacing: 0.1em;
-    margin-bottom: 28px;
-  }
-
-  .modal-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-
-  .modal-stat { border-left: 2px solid var(--border); padding-left: 12px; }
-  .modal-stat .label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
-  .modal-stat .val {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 28px;
-    font-weight: 300;
-    color: var(--off-white);
-  }
-
-  .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
-  .modal-action-btn {
-    padding: 10px 18px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--off-white);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .modal-action-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
-  .modal-action-btn.primary { background: var(--gold); color: var(--black); border-color: var(--gold); font-weight: 500; }
-  .modal-action-btn.primary:hover { background: var(--gold-light); }
-
-  .modal-close {
-    position: absolute;
-    top: 16px; right: 16px;
-    background: none;
-    border: none;
-    color: var(--gray);
-    font-size: 20px;
-    cursor: pointer;
-    line-height: 1;
-    transition: color 0.2s;
-  }
-  .modal-close:hover { color: var(--off-white); }
-
-  /* ── ANIMATIONS ── */
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .animate-in { animation: fadeIn 0.4s ease forwards; }
-
-  .loading-dot::after {
-    content: '';
-    display: inline-block;
-    animation: dots 1.2s infinite;
-  }
-  @keyframes dots {
-    0%   { content: ''; }
-    33%  { content: '.'; }
-    66%  { content: '..'; }
-    100% { content: '...'; }
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 900px) {
-    main { padding: 20px; }
-    header { padding: 16px 20px; }
-    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  @media (max-width: 600px) {
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
-    .section-header { flex-direction: column; gap: 12px; align-items: flex-start; }
-  }
-</style>
-</head>
-<body>
-
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-logo">IT LOOK · Analytics</div>
-  <div class="login-title">
-    <h1>Radar de<br><em>Performance</em></h1>
-    <p>Catálogo · Inteligência de Produto</p>
-  </div>
-  <button class="btn-google" onclick="signIn()">
-    <svg width="18" height="18" viewBox="0 0 18 18">
-      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-      <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
-      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
-    </svg>
-    ENTRAR COM GOOGLE
-  </button>
-  <div id="login-error" style="color:#e05c2a;font-size:12px;display:none;"></div>
-</div>
-
-<!-- APP -->
-<div id="app">
-  <header>
-    <div class="header-brand">IT LOOK</div>
-    <div class="header-title">Radar de Performance</div>
-    <div class="header-user">
-      <span id="user-initial" class="user-dot">D</span>
-      <span id="user-name">Dani</span>
-      <span style="color:var(--border)">·</span>
-      <span style="cursor:pointer;font-size:11px;" onclick="signOut()">Sair</span>
+import { useState } from "react";
+
+const mockProducts = [
+  { id: 1,  name: "Calça Alfaiataria Valentina Preta",       impressions: 872,  clicks: 62,  cart: 10, purchases: 3, ctr: 7.1, img: "https://images.unsplash.com/photo-1594938298603-c8148c4b4e0e?w=120&h=160&fit=crop" },
+  { id: 2,  name: "Calça Alfaiataria Valentina Marinho",     impressions: 4532, clicks: 290, cart: 2,  purchases: 2, ctr: 6.4, img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=120&h=160&fit=crop" },
+  { id: 3,  name: "Calça Alfaiataria Valentina Preta (G)",   impressions: 4473, clicks: 260, cart: 12, purchases: 2, ctr: 5.8, img: "https://images.unsplash.com/photo-1551163943-3f7253a97855?w=120&h=160&fit=crop" },
+  { id: 4,  name: "Calça Alfaiataria Daniele Marinho",       impressions: 553,  clicks: 28,  cart: 5,  purchases: 3, ctr: 5.1, img: "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=120&h=160&fit=crop" },
+  { id: 5,  name: "Calça Alfaiataria Valentina Marrom",      impressions: 3259, clicks: 80,  cart: 11, purchases: 1, ctr: 2.5, img: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=120&h=160&fit=crop" },
+  { id: 6,  name: "Blazer Alfaiataria Valentina Marinho",    impressions: 3039, clicks: 52,  cart: 1,  purchases: 1, ctr: 1.7, img: "https://images.unsplash.com/photo-1591369822096-ffd140ec948f?w=120&h=160&fit=crop" },
+  { id: 7,  name: "Jaqueta Trench Lucia Bordô",              impressions: 2964, clicks: 18,  cart: 3,  purchases: 1, ctr: 0.6, img: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=120&h=160&fit=crop" },
+  { id: 8,  name: "Calça Listrada Daiana Preto",             impressions: 912,  clicks: 4,   cart: 2,  purchases: 1, ctr: 0.4, img: "https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=120&h=160&fit=crop" },
+  { id: 9,  name: "Calça Alfaiataria Coz Verde Musgo",       impressions: 27,   clicks: 0,   cart: 7,  purchases: 4, ctr: 0.0, img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=120&h=160&fit=crop" },
+  { id: 10, name: "Conjunto Malha Karen Bege",               impressions: 284,  clicks: 0,   cart: 1,  purchases: 1, ctr: 0.0, img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=160&fit=crop" },
+  { id: 11, name: "Blusa Crepe Mariana Offwhite",            impressions: 1840, clicks: 9,   cart: 0,  purchases: 0, ctr: 0.5, img: "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=120&h=160&fit=crop" },
+  { id: 12, name: "Calça Wide Leg Patrícia Nude",            impressions: 95,   clicks: 0,   cart: 0,  purchases: 0, ctr: 0.0, img: "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=120&h=160&fit=crop" },
+  { id: 13, name: "Blazer Tweed Sofia Rosa",                 impressions: 2100, clicks: 145, cart: 8,  purchases: 0, ctr: 6.9, img: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=120&h=160&fit=crop" },
+  { id: 14, name: "Calça Reta Helena Caramelo",              impressions: 680,  clicks: 41,  cart: 6,  purchases: 0, ctr: 6.0, img: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=120&h=160&fit=crop" },
+  { id: 15, name: "Blusa Seda Amanda Marfim",                impressions: 44,   clicks: 0,   cart: 0,  purchases: 0, ctr: 0.0, img: "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=120&h=160&fit=crop" },
+];
+
+const AVG_CTR = mockProducts.reduce((s, p) => s + p.ctr, 0) / mockProducts.length;
+
+function classify(p) {
+  const highCTR = p.ctr >= AVG_CTR;
+  const hasPurchases = p.purchases >= 2;
+  const hasCart = p.cart > 0;
+  const highImpressions = p.impressions > 500;
+  if (highCTR && hasPurchases) return "estrela";
+  if (highImpressions && hasCart && p.purchases === 0) return "problema";
+  if (highCTR && !hasPurchases) return "alto_interesse";
+  if (p.impressions < 100 && p.purchases === 0) return "invisivel";
+  return "normal";
+}
+
+// Baixa saturação: verde, azul, amarelo, vermelho, lavanda
+const STATUS = {
+  estrela:        { label: "Estrela",        icon: "★", text: "#2D5A3D", bg: "#EDF4EF", border: "#C2D9C9", dot: "#5A9970", pillBg: "#E0EEE5" },
+  alto_interesse: { label: "Alto Interesse", icon: "↑", text: "#1E3A5F", bg: "#EDF2F8", border: "#B8CEEA", dot: "#5A7FA8", pillBg: "#DDE9F5" },
+  normal:         { label: "Normal",         icon: "◎", text: "#6B5A00", bg: "#FBF8EE", border: "#E8D98A", dot: "#C4A832", pillBg: "#F5EDBB" },
+  problema:       { label: "Problema",       icon: "!",  text: "#6B2020", bg: "#FAF0F0", border: "#E8B8B8", dot: "#C45A5A", pillBg: "#F5DADA" },
+  invisivel:      { label: "Invisível",      icon: "○", text: "#5C5470", bg: "#F3F1F8", border: "#D4CEEA", dot: "#9B92C0", pillBg: "#EAE7F5" },
+};
+
+const ORDER = ["estrela", "alto_interesse", "normal", "problema", "invisivel"];
+const fmt = n => n?.toLocaleString("pt-BR") ?? "—";
+
+function Tag({ s }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600,
+      color: s.text, background: s.pillBg, border: `1px solid ${s.border}`,
+      borderRadius: 20, padding: "3px 10px", letterSpacing: 0.8, whiteSpace: "nowrap"
+    }}>
+      {s.icon} {s.label.toUpperCase()}
+    </span>
+  );
+}
+
+function Pill({ label, value, color }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <span style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, fontWeight: 500 }}>{label.toUpperCase()}</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: color || "#374151" }}>{value}</span>
     </div>
-  </header>
+  );
+}
 
-  <main>
+function ProductCard({ p }) {
+  const [open, setOpen] = useState(false);
+  const s = STATUS[p.status];
+  const convRate = p.impressions > 0 ? ((p.purchases / p.impressions) * 100).toFixed(2) + "%" : "—";
+  const addRate  = p.impressions > 0 ? ((p.cart / p.impressions) * 100).toFixed(2) + "%" : "—";
 
-    <!-- KPIs -->
-    <div class="kpi-grid" id="kpi-grid">
-      <div class="kpi-card" style="--card-color:var(--estrela)" data-filter="Estrela" onclick="filterByCard(this)">
-        <span class="kpi-icon">⭐</span>
-        <div class="kpi-label">Produto Estrela</div>
-        <div class="kpi-value" id="kpi-estrela">—</div>
-        <div class="kpi-sub">produtos</div>
-      </div>
-      <div class="kpi-card" style="--card-color:var(--interesse)" data-filter="Alto Interesse" onclick="filterByCard(this)">
-        <span class="kpi-icon">🔥</span>
-        <div class="kpi-label">Alto Interesse</div>
-        <div class="kpi-value" id="kpi-interesse">—</div>
-        <div class="kpi-sub">baixa conversão</div>
-      </div>
-      <div class="kpi-card" style="--card-color:var(--problema)" data-filter="Problema de Página" onclick="filterByCard(this)">
-        <span class="kpi-icon">⚠️</span>
-        <div class="kpi-label">Problema de Página</div>
-        <div class="kpi-value" id="kpi-problema">—</div>
-        <div class="kpi-sub">requer atenção</div>
-      </div>
-      <div class="kpi-card" style="--card-color:var(--normal)" data-filter="Normal" onclick="filterByCard(this)">
-        <span class="kpi-icon">💤</span>
-        <div class="kpi-label">Normal</div>
-        <div class="kpi-value" id="kpi-normal">—</div>
-        <div class="kpi-sub">performance padrão</div>
-      </div>
-      <div class="kpi-card" style="--card-color:var(--invisivel)" data-filter="Invisível" onclick="filterByCard(this)">
-        <span class="kpi-icon">👻</span>
-        <div class="kpi-label">Invisível</div>
-        <div class="kpi-value" id="kpi-invisivel">—</div>
-        <div class="kpi-sub">baixíssimo alcance</div>
-      </div>
-    </div>
+  return (
+    <div
+      style={{
+        background: open ? s.bg : "#fff",
+        border: `1.5px solid ${open ? s.border : "#ECEAE6"}`,
+        borderRadius: 12,
+        marginBottom: 10,
+        overflow: "hidden",
+        transition: "all 0.18s",
+        cursor: "pointer",
+      }}
+      onClick={() => setOpen(o => !o)}
+      onMouseEnter={e => { if (!open) e.currentTarget.style.borderColor = s.border; }}
+      onMouseLeave={e => { if (!open) e.currentTarget.style.borderColor = "#ECEAE6"; }}
+    >
+      {/* Card main row */}
+      <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
 
-    <!-- TABLE HEADER -->
-    <div class="section-header">
-      <div class="section-title">Catálogo</div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <div class="search-wrap">
-          <input type="text" id="search-input" placeholder="Buscar produto..." oninput="renderTable()">
+        {/* Foto */}
+        <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden" }}>
+          <img
+            src={p.img}
+            alt={p.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }}
+            onError={e => { e.target.style.display = "none"; }}
+          />
+          {/* status dot over image */}
+          <div style={{
+            position: "absolute", top: 8, left: 8,
+            width: 8, height: 8, borderRadius: "50%",
+            background: s.dot, boxShadow: "0 0 0 2px white"
+          }} />
         </div>
-        <div class="filter-pills" id="filter-pills">
-          <button class="pill active" data-status="Todos" onclick="setPill(this)">Todos</button>
-          <button class="pill" data-status="Estrela" onclick="setPill(this)">⭐ Estrela</button>
-          <button class="pill" data-status="Alto Interesse" onclick="setPill(this)">🔥 Alto Interesse</button>
-          <button class="pill" data-status="Problema de Página" onclick="setPill(this)">⚠️ Problema</button>
-          <button class="pill" data-status="Normal" onclick="setPill(this)">💤 Normal</button>
-          <button class="pill" data-status="Invisível" onclick="setPill(this)">👻 Invisível</button>
+
+        {/* Content */}
+        <div style={{ flex: 1, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {p.name}
+            </div>
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+              <Pill label="Impressões" value={fmt(p.impressions)} />
+              <Pill label="CTR" value={`${p.ctr.toFixed(1)}%`} color={p.ctr >= AVG_CTR ? s.text : "#6B7280"} />
+              <Pill label="Carrinho" value={p.cart} color={p.cart > 0 ? "#2D6A4F" : "#9CA3AF"} />
+              <Pill label="Compras" value={p.purchases} color={p.purchases > 0 ? s.text : "#9CA3AF"} />
+            </div>
+          </div>
+
+          {/* Destaque compras */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+            {p.purchases > 0 && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: s.dot, lineHeight: 1 }}>{p.purchases}</div>
+                <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, marginTop: 2 }}>VENDAS</div>
+              </div>
+            )}
+            <Tag s={s} />
+            <div style={{ fontSize: 10, color: "#C4BFB8", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</div>
+          </div>
         </div>
       </div>
+
+      {/* Expanded detail */}
+      {open && (
+        <div style={{ padding: "16px 18px 16px 90px", borderTop: `1px solid ${s.border}`, background: s.bg }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            {[
+              { label: "Impressões", value: fmt(p.impressions) },
+              { label: "Cliques", value: fmt(p.clicks) },
+              { label: "Add to Cart", value: p.cart },
+              { label: "Compras", value: p.purchases },
+              { label: "CTR", value: `${p.ctr.toFixed(1)}%` },
+              { label: "Add Rate", value: addRate },
+              { label: "Conv. Rate", value: convRate },
+              { label: "CTR médio", value: `${AVG_CTR.toFixed(1)}%` },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", border: `1px solid ${s.border}` }}>
+                <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, marginBottom: 4, fontWeight: 500 }}>{label.toUpperCase()}</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: s.text }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Insight row */}
+          {p.status === "alto_interesse" && (
+            <div style={{ marginTop: 12, background: STATUS.alto_interesse.pillBg, border: `1px solid ${STATUS.alto_interesse.border}`, borderRadius: 8, padding: "10px 14px" }}>
+              <span style={{ fontSize: 12, color: STATUS.alto_interesse.text }}>
+                💡 <strong>Oportunidade:</strong> CTR alto mas sem conversão. Verifique preço, descrição ou qualidade da foto.
+              </span>
+            </div>
+          )}
+          {p.status === "estrela" && (
+            <div style={{ marginTop: 12, background: STATUS.estrela.pillBg, border: `1px solid ${STATUS.estrela.border}`, borderRadius: 8, padding: "10px 14px" }}>
+              <span style={{ fontSize: 12, color: STATUS.estrela.text }}>
+                ★ <strong>Destaque:</strong> Produto com boa performance. Melhorar a foto pode aumentar ainda mais as vendas.
+              </span>
+            </div>
+          )}
+          {p.status === "problema" && (
+            <div style={{ marginTop: 12, background: STATUS.problema.pillBg, border: `1px solid ${STATUS.problema.border}`, borderRadius: 8, padding: "10px 14px" }}>
+              <span style={{ fontSize: 12, color: STATUS.problema.text }}>
+                ⚠ <strong>Atenção:</strong> Muita gente adiciona ao carrinho mas não compra. Revise preço ou política de frete.
+              </span>
+            </div>
+          )}
+          {p.status === "invisivel" && (
+            <div style={{ marginTop: 12, background: STATUS.invisivel.pillBg, border: `1px solid ${STATUS.invisivel.border}`, borderRadius: 8, padding: "10px 14px" }}>
+              <span style={{ fontSize: 12, color: STATUS.invisivel.text }}>
+                ○ <strong>Invisível:</strong> Produto com baixíssimo alcance. Considere impulsionar ou revisar título e tags.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
 
-    <!-- TABLE -->
-    <div class="table-wrap animate-in">
-      <table>
-        <thead>
-          <tr>
-            <th onclick="sortBy('produto')">Produto ↕</th>
-            <th onclick="sortBy('impressoes')">Impressões ↕</th>
-            <th onclick="sortBy('cliques')">Cliques ↕</th>
-            <th onclick="sortBy('carrinho')">Carrinho ↕</th>
-            <th onclick="sortBy('compras')">Compras ↕</th>
-            <th onclick="sortBy('ctr')">CTR ↕</th>
-            <th onclick="sortBy('add_rate')">Add Rate ↕</th>
-            <th onclick="sortBy('conversion_rate')">Conv. Rate ↕</th>
-            <th>Status</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-          <tr><td colspan="10" class="state-msg"><span class="loading-dot">Carregando dados</span></td></tr>
-        </tbody>
-      </table>
+function GroupSection({ statusKey, products }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const s = STATUS[statusKey];
+  if (products.length === 0) return null;
+  const totalPurchases = products.reduce((a, p) => a + p.purchases, 0);
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div
+        onClick={() => setCollapsed(c => !c)}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, cursor: "pointer", userSelect: "none" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Tag s={s} />
+          <span style={{ fontSize: 12, color: "#B0A898" }}>{products.length} produto{products.length !== 1 ? "s" : ""}</span>
+          {totalPurchases > 0 && <span style={{ fontSize: 12, color: s.text, fontWeight: 500 }}>· {totalPurchases} venda{totalPurchases !== 1 ? "s" : ""}</span>}
+        </div>
+        <span style={{ fontSize: 10, color: "#C4BFB8", transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▲</span>
+      </div>
+      {!collapsed && products.map(p => <ProductCard key={p.id} p={p} />)}
     </div>
-
-    <div style="margin-top:14px;font-size:11px;color:var(--gray);text-align:right;" id="row-count"></div>
-
-  </main>
-</div>
-
-<!-- MODAL -->
-<div id="modal-overlay" onclick="closeModal(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">×</button>
-    <h3 id="modal-name">—</h3>
-    <div class="modal-status" id="modal-status">—</div>
-    <div class="modal-grid" id="modal-grid"></div>
-    <div class="modal-actions" id="modal-actions"></div>
-  </div>
-</div>
-
-<script>
-// ══════════════════════════════════════════════════
-// CONFIG — ajuste se necessário
-// ══════════════════════════════════════════════════
-const PROJECT_ID  = 'itlook-analytics';
-const DATASET     = 'analytics_395902084';
-const VIEW        = 'vw_produtos_inteligente';
-const CLIENT_ID   = '981412010562-1mob2lq1uavnvtj5mjjl97eh9lu6u50o.apps.googleusercontent.com'; // ← cole seu OAuth Client ID aqui (veja instruções abaixo)
-
-// ══════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════
-let allData      = [];
-let currentFilter = 'Todos';
-let sortCol      = 'impressoes';
-let sortAsc      = false;
-let tokenClient;
-let accessToken;
-
-// ══════════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════════
-function initGoogle() {
-  if (!CLIENT_ID) {
-    document.querySelector('#login-screen .btn-google').textContent = '⚠ Configure o CLIENT_ID no código';
-    return;
-  }
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/bigquery.readonly',
-    callback: async (resp) => {
-      if (resp.error) { showError(resp.error); return; }
-      accessToken = resp.access_token;
-      showApp();
-      await loadData();
-    }
-  });
+  );
 }
 
-function signIn() {
-  if (!CLIENT_ID) {
-    showError('Configure o CLIENT_ID no arquivo HTML (veja comentário no código).');
-    return;
-  }
-  tokenClient.requestAccessToken();
+export default function RadarPerformance() {
+  const [search, setSearch] = useState("");
+  const products = mockProducts.map(p => ({ ...p, status: classify(p) }));
+  const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const grouped = {};
+  ORDER.forEach(k => { grouped[k] = filtered.filter(p => p.status === k); });
+
+  const totalVendas = products.reduce((a, p) => a + p.purchases, 0);
+  const totalImpressoes = products.reduce((a, p) => a + p.impressions, 0);
+  const estrelas = products.filter(p => p.status === "estrela").length;
+  const problemas = products.filter(p => p.status === "problema" || p.status === "invisivel").length;
+
+  return (
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#F7F6F3", minHeight: "100vh", color: "#1a1a1a" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; }`}</style>
+
+      {/* Header */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #ECEAE6", padding: "0 40px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 58 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, color: "#1a1a1a" }}>IT LOOK</span>
+            <span style={{ width: 1, height: 14, background: "#E0DDD8" }} />
+            <span style={{ fontSize: 11, color: "#B0A898", letterSpacing: 1.5, fontWeight: 500 }}>RADAR DE PERFORMANCE</span>
+          </div>
+          <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#C9A84C", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 600 }}>D</div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
+
+        {/* Summary */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
+          {[
+            { label: "Vendas Totais",     value: totalVendas,        sub: "últimos 7 dias",    color: STATUS.estrela.text },
+            { label: "Impressões",        value: fmt(totalImpressoes), sub: "alcance total",   color: "#374151" },
+            { label: "Produtos Estrela",  value: estrelas,           sub: "CTR alto + vendas", color: STATUS.estrela.dot },
+            { label: "Precisam Atenção",  value: problemas,          sub: "problema + invisível", color: STATUS.problema.dot },
+          ].map(({ label, value, sub, color }) => (
+            <div key={label} style={{ background: "#fff", border: "1.5px solid #ECEAE6", borderRadius: 10, padding: "16px 18px" }}>
+              <div style={{ fontSize: 10, color: "#B0A898", letterSpacing: 1, marginBottom: 8, fontWeight: 500 }}>{label.toUpperCase()}</div>
+              <div style={{ fontSize: 30, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+              <div style={{ fontSize: 11, color: "#B0A898", marginTop: 5 }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search */}
+        <input
+          placeholder="Buscar produto..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, border: "1.5px solid #E0DDD8", borderRadius: 8, padding: "9px 14px", width: 250, background: "#fff", color: "#1a1a1a", outline: "none", marginBottom: 24 }}
+        />
+
+        {ORDER.map(k => <GroupSection key={k} statusKey={k} products={grouped[k]} />)}
+      </div>
+    </div>
+  );
 }
-
-function signOut() {
-  google.accounts.oauth2.revoke(accessToken, () => {
-    accessToken = null;
-    allData = [];
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-  });
-}
-
-function showApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-}
-
-function showError(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-// ══════════════════════════════════════════════════
-// BIGQUERY
-// ══════════════════════════════════════════════════
-async function loadData() {
-  const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET}.${VIEW}\` ORDER BY impressoes DESC LIMIT 500`;
-  const url = `https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT_ID}/queries`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ query, useLegacySql: false, timeoutMs: 30000 })
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    showTableError('Erro ao buscar dados: ' + (err.error?.message || res.status));
-    return;
-  }
-
-  const data = await res.json();
-
-  if (!data.rows) {
-    showTableError('Nenhum dado encontrado na view.');
-    return;
-  }
-
-  const fields = data.schema.fields.map(f => f.name);
-  allData = data.rows.map(row => {
-    const obj = {};
-    row.f.forEach((cell, i) => {
-      const val = cell.v;
-      const num = parseFloat(val);
-      obj[fields[i]] = isNaN(num) ? val : num;
-    });
-    return obj;
-  });
-
-  updateKPIs();
-  renderTable();
-}
-
-function showTableError(msg) {
-  document.getElementById('table-body').innerHTML =
-    `<tr><td colspan="10" class="state-msg"><span>⚠</span>${msg}</td></tr>`;
-}
-
-// ══════════════════════════════════════════════════
-// KPI CARDS
-// ══════════════════════════════════════════════════
-function updateKPIs() {
-  const count = (key) => allData.filter(r =>
-    r.status_inteligente && r.status_inteligente.toLowerCase().includes(key.toLowerCase())
-  ).length;
-
-  document.getElementById('kpi-estrela').textContent   = count('Estrela');
-  document.getElementById('kpi-interesse').textContent = count('Alto Interesse');
-  document.getElementById('kpi-problema').textContent  = count('Problema');
-  document.getElementById('kpi-normal').textContent    = count('Normal');
-  document.getElementById('kpi-invisivel').textContent = count('Invis');
-}
-
-// ══════════════════════════════════════════════════
-// TABLE
-// ══════════════════════════════════════════════════
-function renderTable() {
-  const search = document.getElementById('search-input').value.toLowerCase();
-
-  let rows = allData.filter(r => {
-    const matchFilter = currentFilter === 'Todos' ||
-      (r.status_inteligente && r.status_inteligente.toLowerCase().includes(currentFilter.toLowerCase()));
-    const matchSearch = !search || (r.produto && r.produto.toLowerCase().includes(search));
-    return matchFilter && matchSearch;
-  });
-
-  rows.sort((a, b) => {
-    const av = a[sortCol] ?? 0;
-    const bv = b[sortCol] ?? 0;
-    if (typeof av === 'string') return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-    return sortAsc ? av - bv : bv - av;
-  });
-
-  document.getElementById('row-count').textContent = `${rows.length} produto${rows.length !== 1 ? 's' : ''}`;
-
-  if (!rows.length) {
-    document.getElementById('table-body').innerHTML =
-      `<tr><td colspan="10" class="state-msg"><span>∅</span>Nenhum produto neste filtro</td></tr>`;
-    return;
-  }
-
-  document.getElementById('table-body').innerHTML = rows.map((r, i) => `
-    <tr>
-      <td class="produto-cell" title="${r.produto || ''}">${r.produto || '—'}</td>
-      <td class="num">${fmt(r.impressoes)}</td>
-      <td class="num">${fmt(r.cliques)}</td>
-      <td class="num">${fmt(r.carrinho)}</td>
-      <td class="num">${fmt(r.compras)}</td>
-      <td class="pct">${pct(r.ctr)}</td>
-      <td class="pct">${pct(r.add_rate)}</td>
-      <td class="pct">${pct(r.conversion_rate)}</td>
-      <td>${statusBadge(r.status_inteligente)}</td>
-      <td><button class="action-btn" onclick='openModal(${i})'>Ver</button></td>
-    </tr>
-  `).join('');
-
-  // store filtered for modal reference
-  window._filteredRows = rows;
-}
-
-function fmt(v) { return v != null ? Number(v).toLocaleString('pt-BR') : '—'; }
-function pct(v) { return v != null ? (v * 100).toFixed(1) + '%' : '—'; }
-
-function statusBadge(s) {
-  if (!s) return '—';
-  const sl = s.toLowerCase();
-  let cls = 'normal', icon = '💤';
-  if (sl.includes('estrela'))    { cls = 'estrela';   icon = '⭐'; }
-  else if (sl.includes('alto'))  { cls = 'interesse'; icon = '🔥'; }
-  else if (sl.includes('probl')) { cls = 'problema';  icon = '⚠️'; }
-  else if (sl.includes('invis')) { cls = 'invisivel'; icon = '👻'; }
-  return `<span class="badge badge-${cls}">${icon} ${s}</span>`;
-}
-
-function sortBy(col) {
-  if (sortCol === col) sortAsc = !sortAsc;
-  else { sortCol = col; sortAsc = false; }
-  renderTable();
-}
-
-// ══════════════════════════════════════════════════
-// FILTERS
-// ══════════════════════════════════════════════════
-function setPill(el) {
-  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  currentFilter = el.dataset.status;
-  // unset card active
-  document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
-  renderTable();
-}
-
-function filterByCard(el) {
-  const status = el.dataset.filter;
-  document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  currentFilter = status;
-  document.querySelectorAll('.pill').forEach(p => {
-    p.classList.toggle('active', p.dataset.status === status);
-  });
-  renderTable();
-}
-
-// ══════════════════════════════════════════════════
-// MODAL
-// ══════════════════════════════════════════════════
-function openModal(idx) {
-  const r = window._filteredRows[idx];
-  if (!r) return;
-
-  document.getElementById('modal-name').textContent = r.produto || '—';
-  document.getElementById('modal-status').textContent = r.status_inteligente || '—';
-
-  document.getElementById('modal-grid').innerHTML = `
-    <div class="modal-stat"><div class="label">Impressões</div><div class="val">${fmt(r.impressoes)}</div></div>
-    <div class="modal-stat"><div class="label">Cliques</div><div class="val">${fmt(r.cliques)}</div></div>
-    <div class="modal-stat"><div class="label">Carrinho</div><div class="val">${fmt(r.carrinho)}</div></div>
-    <div class="modal-stat"><div class="label">Compras</div><div class="val">${fmt(r.compras)}</div></div>
-    <div class="modal-stat"><div class="label">CTR</div><div class="val">${pct(r.ctr)}</div></div>
-    <div class="modal-stat"><div class="label">Add Rate</div><div class="val">${pct(r.add_rate)}</div></div>
-    <div class="modal-stat"><div class="label">Conv. Rate</div><div class="val">${pct(r.conversion_rate)}</div></div>
-  `;
-
-  const actions = getActions(r.status_inteligente);
-  document.getElementById('modal-actions').innerHTML = actions.map((a, i) =>
-    `<button class="modal-action-btn ${i === 0 ? 'primary' : ''}" onclick="${a.fn}">${a.label}</button>`
-  ).join('');
-
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-function getActions(status) {
-  const s = (status || '').toLowerCase();
-  if (s.includes('estrela'))   return [
-    { label: '📣 Impulsionar Anúncio', fn: 'alert("Abrir campanha no Meta Ads")' },
-    { label: '📌 Destacar no Site',    fn: 'alert("Marcar como destaque")' },
-  ];
-  if (s.includes('alto'))      return [
-    { label: '📸 Melhorar Fotos',      fn: 'alert("Revisar fotos do produto")' },
-    { label: '✏️ Revisar Descrição',   fn: 'alert("Editar página do produto")' },
-  ];
-  if (s.includes('probl'))     return [
-    { label: '🔧 Revisar Página',      fn: 'alert("Verificar URL e conteúdo")' },
-    { label: '💰 Ajustar Preço',       fn: 'alert("Revisar precificação")' },
-  ];
-  if (s.includes('invis'))     return [
-    { label: '🚀 Criar Anúncio',       fn: 'alert("Criar campanha no Meta")' },
-    { label: '🏷️ Adicionar Tags SEO',  fn: 'alert("Otimizar SEO do produto")' },
-  ];
-  return [
-    { label: '📊 Monitorar',           fn: 'alert("Produto em observação")' },
-  ];
-}
-
-function closeModal(e) {
-  if (e.target === document.getElementById('modal-overlay')) {
-    document.getElementById('modal-overlay').classList.remove('open');
-  }
-}
-
-// ESC fecha modal
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
-});
-</script>
-
-<!-- Google Identity Services -->
-<script src="https://accounts.google.com/gsi/client" onload="initGoogle()" async defer></script>
-
-</body>
-</html>
