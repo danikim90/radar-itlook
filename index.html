@@ -16,7 +16,6 @@
 
     let AVG_CTR = 0;
 
-    // Mapeia status_inteligente do BigQuery (pode vir em PT, com espaço, maiúsculo, etc.)
     const STATUS_MAP = {
       "estrela": "estrela",
       "alto interesse": "alto_interesse",
@@ -33,17 +32,118 @@
     }
 
     function classify(p) {
-      const hasPurchases = p.compras >= 2;
+      const hasPurchases = p.compras >= 1;
       const hasCart = p.carrinho > 0;
-      const highImpressions = p.impressoes > 500;
-      // Só considera CTR alto se AVG_CTR > 0, senão usa valor absoluto mínimo
+      const highImpressions = p.impressoes > 200;
       const highCTR = AVG_CTR > 0 ? p.ctr >= AVG_CTR : p.ctr > 0;
-      if (hasPurchases && highCTR) return "estrela";
-      if (hasPurchases && !highCTR) return "normal"; // vendeu mas CTR baixo
+      if (hasPurchases && (highCTR || p.compras >= 2)) return "estrela";
       if (highImpressions && hasCart && p.compras === 0) return "problema";
       if (highCTR && !hasPurchases) return "alto_interesse";
-      if (p.impressoes < 100 && p.compras === 0) return "invisivel";
+      if (p.impressoes < 50 && p.compras === 0) return "invisivel";
       return "normal";
+    }
+
+    // Recomendações estratégicas baseadas no triângulo Produto · Preço · Foto
+    function getRecomendacao(p) {
+      const temImpressoes = p.impressoes >= 200;
+      const temCliques = p.cliques > 0;
+      const temCarrinho = p.carrinho > 0;
+      const temVendas = p.compras > 0;
+      const ctrBaixo = p.ctr === 0 || (AVG_CTR > 0 && p.ctr < AVG_CTR * 0.5);
+
+      if (p.status === "estrela") {
+        return {
+          icone: "★",
+          titulo: "Produto funcionando bem",
+          acoes: [
+            "📦 Garanta estoque suficiente — este produto está convertendo",
+            "📸 Mesmo assim, melhorar a foto pode aumentar ainda mais o CTR",
+            "💰 Teste aumentar o preço em 5–10% e veja se a conversão se mantém",
+          ]
+        };
+      }
+
+      if (p.status === "problema") {
+        if (temCarrinho && !temVendas) {
+          return {
+            icone: "⚠",
+            titulo: "Interesse alto, mas tranca na hora de comprar",
+            acoes: [
+              "💰 PREÇO — revise se está competitivo. Compare com produtos similares no mercado",
+              "🚚 Verifique se o frete está afastando o cliente na hora do checkout",
+              "📸 Fotos adicionais mostrando detalhes (tecido, caimento) podem dar mais segurança para comprar",
+            ]
+          };
+        }
+        return {
+          icone: "⚠",
+          titulo: "Muita exposição mas sem resultado",
+          acoes: [
+            "📸 FOTO — a imagem principal não está vendendo o produto. Troque por uma foto com mais impacto visual",
+            "💰 Revise o preço — pode estar acima do que o cliente percebe como valor",
+            "👗 Avalie se o produto tem apelo para o público da IT Look (mulher 45–55, ocasião noturna)",
+          ]
+        };
+      }
+
+      if (p.status === "alto_interesse") {
+        return {
+          icone: "↑",
+          titulo: "Clica mas não compra",
+          acoes: [
+            "💰 PREÇO é o principal suspeito — o cliente se interessa mas não converte",
+            "📸 Revise as fotos adicionais dentro do produto — a primeira foto atrai, mas as demais precisam convencer",
+            "👗 Melhore a descrição: medidas, tecido, ocasião de uso ajudam a dar segurança para comprar",
+          ]
+        };
+      }
+
+      if (p.status === "invisivel") {
+        return {
+          icone: "○",
+          titulo: "Produto invisível — quase ninguém vê",
+          acoes: [
+            "📸 FOTO — no grid da loja, a imagem precisa se destacar para gerar clique. Invista em foto de impacto",
+            "🏷 Revise o título: inclua palavras que sua cliente busca (blazer festa, blusa elegante, calça social)",
+            "📣 Considere impulsionar este produto com um anúncio de baixo custo para gerar primeiros dados",
+          ]
+        };
+      }
+
+      // Normal
+      if (!temImpressoes && !temCliques) {
+        return {
+          icone: "◎",
+          titulo: "Produto com pouca exposição ainda",
+          acoes: [
+            "📸 FOTO — comece pela imagem principal. No grid da loja, a foto é o que decide o clique",
+            "🏷 Revise o título e as tags para aparecer melhor nas buscas",
+            "💰 Verifique se o preço está alinhado com produtos similares da IT Look",
+          ]
+        };
+      }
+
+      if (temImpressoes && !temCliques && !temVendas) {
+        return {
+          icone: "◎",
+          titulo: "Aparece mas ninguém clica",
+          acoes: [
+            "📸 FOTO URGENTE — o produto aparece mas não atrai. A foto principal é o principal problema",
+            "🏷 Teste um título diferente que comunique melhor o benefício (ex: 'Blazer Alfaiataria Festa')",
+            "💰 Verifique se o preço exibido no grid está competitivo",
+          ]
+        };
+      }
+
+      return {
+        icone: "◎",
+        titulo: "Produto em desenvolvimento",
+        acoes: [
+          "📸 Avalie a qualidade da foto — é o primeiro filtro do cliente",
+          "💰 Compare o preço com produtos similares",
+          "👗 Revise se o produto está bem posicionado para o público IT Look",
+        ]
+      };
     }
 
     const STATUS = {
@@ -183,34 +283,21 @@
                 ))}
               </div>
 
-              {p.status === "alto_interesse" && (
-                <div style={{ marginTop: 12, background: STATUS.alto_interesse.pillBg, border: `1px solid ${STATUS.alto_interesse.border}`, borderRadius: 8, padding: "10px 14px" }}>
-                  <span style={{ fontSize: 12, color: STATUS.alto_interesse.text }}>
-                    💡 <strong>Oportunidade:</strong> CTR alto mas sem conversão. Verifique preço, descrição ou qualidade da foto.
-                  </span>
-                </div>
-              )}
-              {p.status === "estrela" && (
-                <div style={{ marginTop: 12, background: STATUS.estrela.pillBg, border: `1px solid ${STATUS.estrela.border}`, borderRadius: 8, padding: "10px 14px" }}>
-                  <span style={{ fontSize: 12, color: STATUS.estrela.text }}>
-                    ★ <strong>Destaque:</strong> Produto com boa performance. Melhorar a foto pode aumentar ainda mais as vendas.
-                  </span>
-                </div>
-              )}
-              {p.status === "problema" && (
-                <div style={{ marginTop: 12, background: STATUS.problema.pillBg, border: `1px solid ${STATUS.problema.border}`, borderRadius: 8, padding: "10px 14px" }}>
-                  <span style={{ fontSize: 12, color: STATUS.problema.text }}>
-                    ⚠ <strong>Atenção:</strong> Muita gente adiciona ao carrinho mas não compra. Revise preço ou política de frete.
-                  </span>
-                </div>
-              )}
-              {p.status === "invisivel" && (
-                <div style={{ marginTop: 12, background: STATUS.invisivel.pillBg, border: `1px solid ${STATUS.invisivel.border}`, borderRadius: 8, padding: "10px 14px" }}>
-                  <span style={{ fontSize: 12, color: STATUS.invisivel.text }}>
-                    ○ <strong>Invisível:</strong> Produto com baixíssimo alcance. Considere impulsionar ou revisar título e tags.
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const rec = getRecomendacao(p);
+                return (
+                  <div style={{ marginTop: 12, background: s.pillBg, border: `1px solid ${s.border}`, borderRadius: 8, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: s.text, marginBottom: 8 }}>
+                      {rec.icone} {rec.titulo}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {rec.acoes.map((acao, i) => (
+                        <div key={i} style={{ fontSize: 12, color: s.text, lineHeight: 1.5 }}>{acao}</div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
