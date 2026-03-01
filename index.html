@@ -16,14 +16,30 @@
 
     let AVG_CTR = 0;
 
-    // ✅ CORRIGIDO: usa os nomes reais das colunas do BigQuery
-    // impressoes, compras, cliques, carrinho, status_inteligente
+    // Mapeia status_inteligente do BigQuery (pode vir em PT, com espaço, maiúsculo, etc.)
+    const STATUS_MAP = {
+      "estrela": "estrela",
+      "alto interesse": "alto_interesse",
+      "alto_interesse": "alto_interesse",
+      "normal": "normal",
+      "problema": "problema",
+      "invisivel": "invisivel",
+      "invisível": "invisivel",
+    };
+
+    function normalizeStatus(raw) {
+      if (!raw) return null;
+      return STATUS_MAP[raw.toString().toLowerCase().trim()] || null;
+    }
+
     function classify(p) {
-      const highCTR = p.ctr >= AVG_CTR;
       const hasPurchases = p.compras >= 2;
       const hasCart = p.carrinho > 0;
       const highImpressions = p.impressoes > 500;
-      if (highCTR && hasPurchases) return "estrela";
+      // Só considera CTR alto se AVG_CTR > 0, senão usa valor absoluto mínimo
+      const highCTR = AVG_CTR > 0 ? p.ctr >= AVG_CTR : p.ctr > 0;
+      if (hasPurchases && highCTR) return "estrela";
+      if (hasPurchases && !highCTR) return "normal"; // vendeu mas CTR baixo
       if (highImpressions && hasCart && p.compras === 0) return "problema";
       if (highCTR && !hasPurchases) return "alto_interesse";
       if (p.impressoes < 100 && p.compras === 0) return "invisivel";
@@ -240,8 +256,11 @@
             AVG_CTR = mapped.length > 0
               ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
               : 0;
-            // ✅ CORRIGIDO: classify agora lê p.impressoes, p.compras, p.carrinho
-            const withStatus = mapped.map(p => ({ ...p, status: p.status_inteligente || classify(p) }));
+            // Usa status_inteligente do BigQuery se existir e for válido, senão classifica localmente
+            const withStatus = mapped.map(p => ({
+              ...p,
+              status: normalizeStatus(p.status_inteligente) || classify(p)
+            }));
             setProducts(withStatus);
             setLoading(false);
           })
