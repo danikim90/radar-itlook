@@ -16,15 +16,17 @@
 
     let AVG_CTR = 0;
 
+    // ✅ CORRIGIDO: usa os nomes reais das colunas do BigQuery
+    // impressoes, compras, cliques, carrinho, status_inteligente
     function classify(p) {
       const highCTR = p.ctr >= AVG_CTR;
-      const hasPurchases = p.purchases >= 2;
-      const hasCart = p.cart > 0;
-      const highImpressions = p.impressions > 500;
+      const hasPurchases = p.compras >= 2;
+      const hasCart = p.carrinho > 0;
+      const highImpressions = p.impressoes > 500;
       if (highCTR && hasPurchases) return "estrela";
-      if (highImpressions && hasCart && p.purchases === 0) return "problema";
+      if (highImpressions && hasCart && p.compras === 0) return "problema";
       if (highCTR && !hasPurchases) return "alto_interesse";
-      if (p.impressions < 100 && p.purchases === 0) return "invisivel";
+      if (p.impressoes < 100 && p.compras === 0) return "invisivel";
       return "normal";
     }
 
@@ -37,7 +39,7 @@
     };
 
     const ORDER = ["estrela", "alto_interesse", "normal", "problema", "invisivel"];
-    const fmt = n => n?.toLocaleString("pt-BR") ?? "—";
+    const fmt = n => (typeof n === "number" && !isNaN(n)) ? n.toLocaleString("pt-BR") : "—";
 
     function Tag({ s }) {
       return (
@@ -61,11 +63,32 @@
       );
     }
 
+    // Placeholder elegante quando não há foto
+    function ImagePlaceholder({ name, s }) {
+      const initials = name
+        ? name.trim().split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()
+        : "IT";
+      return (
+        <div style={{
+          width: "100%", height: "100%", minHeight: 80,
+          background: s.pillBg,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 2,
+        }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: s.dot, letterSpacing: 1 }}>{initials}</span>
+          <span style={{ fontSize: 7, color: s.dot, opacity: 0.6, letterSpacing: 0.5 }}>SEM FOTO</span>
+        </div>
+      );
+    }
+
     function ProductCard({ p }) {
       const [open, setOpen] = useState(false);
+      const [imgError, setImgError] = useState(false);
       const s = STATUS[p.status];
-      const convRate = p.impressions > 0 ? ((p.purchases / p.impressions) * 100).toFixed(2) + "%" : "—";
-      const addRate  = p.impressions > 0 ? ((p.cart / p.impressions) * 100).toFixed(2) + "%" : "—";
+
+      // ✅ CORRIGIDO: usa p.impressoes e p.compras
+      const convRate = p.impressoes > 0 ? ((p.compras / p.impressoes) * 100).toFixed(2) + "%" : "—";
+      const addRate  = p.impressoes > 0 ? ((p.carrinho / p.impressoes) * 100).toFixed(2) + "%" : "—";
 
       return (
         <div
@@ -84,12 +107,17 @@
         >
           <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
             <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden" }}>
-              <img
-                src={p.img}
-                alt={p.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }}
-                onError={e => { e.target.style.display = "none"; }}
-              />
+              {/* ✅ Mostra foto se existir, senão mostra placeholder */}
+              {p.img && !imgError ? (
+                <img
+                  src={p.img}
+                  alt={p.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }}
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <ImagePlaceholder name={p.name} s={s} />
+              )}
               <div style={{
                 position: "absolute", top: 8, left: 8,
                 width: 8, height: 8, borderRadius: "50%",
@@ -103,17 +131,18 @@
                   {p.name}
                 </div>
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                  <Pill label="Impressões" value={fmt(p.impressions)} />
-                  <Pill label="CTR" value={`${p.ctr.toFixed(1)}%`} color={p.ctr >= AVG_CTR ? s.text : "#6B7280"} />
-                  <Pill label="Carrinho" value={p.cart} color={p.cart > 0 ? "#2D6A4F" : "#9CA3AF"} />
-                  <Pill label="Compras" value={p.purchases} color={p.purchases > 0 ? s.text : "#9CA3AF"} />
+                  {/* ✅ CORRIGIDO: p.impressoes, p.ctr, p.carrinho, p.compras */}
+                  <Pill label="Impressões" value={fmt(p.impressoes)} />
+                  <Pill label="CTR" value={`${(p.ctr || 0).toFixed(1)}%`} color={p.ctr >= AVG_CTR ? s.text : "#6B7280"} />
+                  <Pill label="Carrinho" value={p.carrinho} color={p.carrinho > 0 ? "#2D6A4F" : "#9CA3AF"} />
+                  <Pill label="Compras" value={p.compras} color={p.compras > 0 ? s.text : "#9CA3AF"} />
                 </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-                {p.purchases > 0 && (
+                {p.compras > 0 && (
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: s.dot, lineHeight: 1 }}>{p.purchases}</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: s.dot, lineHeight: 1 }}>{p.compras}</div>
                     <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, marginTop: 2 }}>VENDAS</div>
                   </div>
                 )}
@@ -126,7 +155,7 @@
             <div style={{ padding: "14px 16px 16px", borderTop: `1px solid ${s.border}`, background: s.bg }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {[
-                  { label: "Cliques",    value: fmt(p.clicks) },
+                  { label: "Cliques",    value: fmt(p.cliques) },
                   { label: "Add Rate",   value: addRate },
                   { label: "Conv. Rate", value: convRate },
                   { label: "CTR médio",  value: `${AVG_CTR.toFixed(1)}%` },
@@ -176,7 +205,8 @@
       const [collapsed, setCollapsed] = useState(false);
       const s = STATUS[statusKey];
       if (products.length === 0) return null;
-      const totalPurchases = products.reduce((a, p) => a + p.purchases, 0);
+      // ✅ CORRIGIDO: usa p.compras
+      const totalPurchases = products.reduce((a, p) => a + (p.compras || 0), 0);
 
       return (
         <div style={{ marginBottom: 28 }}>
@@ -191,7 +221,7 @@
             </div>
             <span style={{ fontSize: 10, color: "#C4BFB8", transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▲</span>
           </div>
-          {!collapsed && products.map(p => <ProductCard key={p.id} p={p} />)}
+          {!collapsed && products.map(p => <ProductCard key={p.id || p.produto} p={p} />)}
         </div>
       );
     }
@@ -205,9 +235,13 @@
         fetch("/api/products")
           .then(res => res.json())
           .then(data => {
+            // ✅ CORRIGIDO: nome vem de p.produto (já estava certo), sem mapeamento errado
             const mapped = data.products.map(p => ({ ...p, name: p.produto }));
-            AVG_CTR = mapped.length > 0 ? mapped.reduce((s, p) => s + p.ctr, 0) / mapped.length : 0;
-            const withStatus = mapped.map(p => ({ ...p, status: classify(p) }));
+            AVG_CTR = mapped.length > 0
+              ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
+              : 0;
+            // ✅ CORRIGIDO: classify agora lê p.impressoes, p.compras, p.carrinho
+            const withStatus = mapped.map(p => ({ ...p, status: p.status_inteligente || classify(p) }));
             setProducts(withStatus);
             setLoading(false);
           })
@@ -224,8 +258,9 @@
       const grouped = {};
       ORDER.forEach(k => { grouped[k] = filtered.filter(p => p.status === k); });
 
-      const totalVendas = products.reduce((a, p) => a + p.purchases, 0);
-      const totalImpressoes = products.reduce((a, p) => a + p.impressions, 0);
+      // ✅ CORRIGIDO: usa p.compras e p.impressoes
+      const totalVendas = products.reduce((a, p) => a + (p.compras || 0), 0);
+      const totalImpressoes = products.reduce((a, p) => a + (p.impressoes || 0), 0);
       const estrelas = products.filter(p => p.status === "estrela").length;
       const problemas = products.filter(p => p.status === "problema" || p.status === "invisivel").length;
 
