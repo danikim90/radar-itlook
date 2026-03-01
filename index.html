@@ -43,6 +43,20 @@
       return "normal";
     }
 
+    // Score de ordenação por categoria — espelha a lógica do BigQuery
+    function calcScore(p) {
+      switch (p.status) {
+        case "estrela":
+          return (p.compras || 0) * (p.ctr || 0) * (p.conversion_rate || 0);
+        case "alto_interesse":
+          return (p.cliques || 0) * (p.ctr || 0);
+        case "problema":
+          return (p.impressoes || 0) * (p.add_rate || 0);
+        default:
+          return p.impressoes || 0;
+      }
+    }
+
     // Recomendações estratégicas baseadas no triângulo Produto · Preço · Foto
     function getRecomendacao(p) {
       const temImpressoes = p.impressoes >= 200;
@@ -179,7 +193,6 @@
       );
     }
 
-    // Placeholder elegante quando não há foto
     function ImagePlaceholder({ name, s }) {
       const initials = name
         ? name.trim().split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()
@@ -202,7 +215,6 @@
       const [imgError, setImgError] = useState(false);
       const s = STATUS[p.status];
 
-      // ✅ CORRIGIDO: usa p.impressoes e p.compras
       const convRate = p.impressoes > 0 ? ((p.compras / p.impressoes) * 100).toFixed(2) + "%" : "—";
       const addRate  = p.impressoes > 0 ? ((p.carrinho / p.impressoes) * 100).toFixed(2) + "%" : "—";
 
@@ -223,7 +235,6 @@
         >
           <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
             <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden" }}>
-              {/* ✅ Mostra foto se existir, senão mostra placeholder */}
               {p.img && !imgError ? (
                 <img
                   src={p.img}
@@ -247,7 +258,6 @@
                   {p.name}
                 </div>
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                  {/* ✅ CORRIGIDO: p.impressoes, p.ctr, p.carrinho, p.compras */}
                   <Pill label="Impressões" value={fmt(p.impressoes)} />
                   <Pill label="CTR" value={`${(p.ctr || 0).toFixed(1)}%`} color={p.ctr >= AVG_CTR ? s.text : "#6B7280"} />
                   <Pill label="Carrinho" value={p.carrinho} color={p.carrinho > 0 ? "#2D6A4F" : "#9CA3AF"} />
@@ -308,7 +318,6 @@
       const [collapsed, setCollapsed] = useState(false);
       const s = STATUS[statusKey];
       if (products.length === 0) return null;
-      // ✅ CORRIGIDO: usa p.compras
       const totalPurchases = products.reduce((a, p) => a + (p.compras || 0), 0);
 
       return (
@@ -338,17 +347,25 @@
         fetch("/api/products")
           .then(res => res.json())
           .then(data => {
-            // ✅ CORRIGIDO: nome vem de p.produto (já estava certo), sem mapeamento errado
             const mapped = data.products.map(p => ({ ...p, name: p.produto }));
             AVG_CTR = mapped.length > 0
               ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
               : 0;
-            // Usa status_inteligente do BigQuery se existir e for válido, senão classifica localmente
             const withStatus = mapped.map(p => ({
               ...p,
               status: normalizeStatus(p.status_inteligente) || classify(p)
             }));
-            setProducts(withStatus);
+            // ✅ Ordena cada produto pelo score_ordem do BigQuery (ou recalcula localmente)
+            const sorted = withStatus.sort((a, b) => {
+              const orderA = ORDER.indexOf(a.status);
+              const orderB = ORDER.indexOf(b.status);
+              if (orderA !== orderB) return orderA - orderB;
+              // Usa score_ordem do BigQuery se disponível, senão calcula local
+              const scoreA = a.score_ordem != null ? a.score_ordem : calcScore(a);
+              const scoreB = b.score_ordem != null ? b.score_ordem : calcScore(b);
+              return scoreB - scoreA;
+            });
+            setProducts(sorted);
             setLoading(false);
           })
           .catch(() => setLoading(false));
@@ -364,7 +381,6 @@
       const grouped = {};
       ORDER.forEach(k => { grouped[k] = filtered.filter(p => p.status === k); });
 
-      // ✅ CORRIGIDO: usa p.compras e p.impressoes
       const totalVendas = products.reduce((a, p) => a + (p.compras || 0), 0);
       const totalImpressoes = products.reduce((a, p) => a + (p.impressoes || 0), 0);
       const estrelas = products.filter(p => p.status === "estrela").length;
@@ -388,7 +404,7 @@
           <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
               {[
-                { label: "Vendas Totais",     value: totalVendas,          sub: "últimos 7 dias",       color: STATUS.estrela.text },
+                { label: "Vendas Totais",     value: totalVendas,          sub: "últimos 30 dias",      color: STATUS.estrela.text },
                 { label: "Impressões",        value: fmt(totalImpressoes), sub: "alcance total",        color: "#374151" },
                 { label: "Produtos Estrela",  value: estrelas,             sub: "CTR alto + vendas",    color: STATUS.estrela.dot },
                 { label: "Precisam Atenção",  value: problemas,            sub: "problema + invisível", color: STATUS.problema.dot },
