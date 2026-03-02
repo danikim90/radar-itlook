@@ -43,7 +43,6 @@
       return "normal";
     }
 
-    // Score de ordenação por categoria — espelha a lógica do BigQuery
     function calcScore(p) {
       switch (p.status) {
         case "estrela":
@@ -57,7 +56,6 @@
       }
     }
 
-    // Recomendações estratégicas baseadas no triângulo Produto · Preço · Foto
     function getRecomendacao(p) {
       const temImpressoes = p.impressoes >= 200;
       const temCliques = p.cliques > 0;
@@ -124,7 +122,6 @@
         };
       }
 
-      // Normal
       if (!temImpressoes && !temCliques) {
         return {
           icone: "◎",
@@ -344,31 +341,40 @@
       const [loading, setLoading] = React.useState(true);
 
       React.useEffect(() => {
-        fetch("/api/products")
-          .then(res => res.json())
-          .then(data => {
-            const mapped = data.products.map(p => ({ ...p, name: p.produto }));
-            AVG_CTR = mapped.length > 0
-              ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
-              : 0;
-            const withStatus = mapped.map(p => ({
-              ...p,
-              status: normalizeStatus(p.status_inteligente) || classify(p)
-            }));
-            // ✅ Ordena cada produto pelo score_ordem do BigQuery (ou recalcula localmente)
-            const sorted = withStatus.sort((a, b) => {
-              const orderA = ORDER.indexOf(a.status);
-              const orderB = ORDER.indexOf(b.status);
-              if (orderA !== orderB) return orderA - orderB;
-              // Usa score_ordem do BigQuery se disponível, senão calcula local
-              const scoreA = a.score_ordem != null ? a.score_ordem : calcScore(a);
-              const scoreB = b.score_ordem != null ? b.score_ordem : calcScore(b);
-              return scoreB - scoreA;
-            });
-            setProducts(sorted);
-            setLoading(false);
-          })
-          .catch(() => setLoading(false));
+        Promise.all([
+          fetch("/api/products").then(res => res.json()),
+          fetch("/api/product-images").then(res => res.json()).catch(() => ({ imageMap: {} }))
+        ]).then(([data, imgData]) => {
+          const imageMap = imgData.imageMap || {};
+
+          const mapped = data.products.map(p => {
+            const nomeKey = p.produto?.toLowerCase().trim();
+            const img = imageMap[nomeKey] || null;
+            return { ...p, name: p.produto, img };
+          });
+
+          AVG_CTR = mapped.length > 0
+            ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
+            : 0;
+
+          const withStatus = mapped.map(p => ({
+            ...p,
+            status: normalizeStatus(p.status_inteligente) || classify(p)
+          }));
+
+          const sorted = withStatus.sort((a, b) => {
+            const orderA = ORDER.indexOf(a.status);
+            const orderB = ORDER.indexOf(b.status);
+            if (orderA !== orderB) return orderA - orderB;
+            const scoreA = a.score_ordem != null ? a.score_ordem : calcScore(a);
+            const scoreB = b.score_ordem != null ? b.score_ordem : calcScore(b);
+            return scoreB - scoreA;
+          });
+
+          setProducts(sorted);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
       }, []);
 
       if (loading) return (
