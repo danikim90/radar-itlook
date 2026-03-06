@@ -268,7 +268,62 @@
       );
     }
 
-    function ProductCard({ p }) {
+    // ─── BLOCO DE TAMANHOS ────────────────────────────────────────────────────
+    function TamanhosPills({ tamanhos, s }) {
+      if (!tamanhos || tamanhos.length === 0) {
+        return (
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${s.border}` }}>
+            <span style={{ fontSize: 10, color: "#C4BFB8", letterSpacing: 0.5 }}>Nenhuma venda no período</span>
+          </div>
+        );
+      }
+
+      // Ordenado do mais vendido pro menos (já vem ordenado da API, mas garante)
+      const sorted = [...tamanhos].sort((a, b) => b.qtd - a.qtd);
+
+      return (
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${s.border}` }}>
+          <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, fontWeight: 500, marginBottom: 6 }}>
+            VENDAS POR TAMANHO
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {sorted.map((item, i) => {
+              // Top 1: cor forte, Top 2: média, Top 3: clara, demais: apagada
+              let bg, textColor, borderColor;
+              if (i === 0) {
+                bg = s.dot; textColor = "#fff"; borderColor = s.dot;
+              } else if (i === 1) {
+                bg = s.pillBg; textColor = s.text; borderColor = s.border;
+              } else if (i === 2) {
+                bg = "#F7F6F3"; textColor = s.text; borderColor = s.border;
+              } else {
+                bg = "#F7F6F3"; textColor = "#C4BFB8"; borderColor = "#E0DDD8";
+              }
+
+              return (
+                <span
+                  key={item.tamanho}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    fontSize: 11, fontWeight: i === 0 ? 600 : 500,
+                    background: bg, color: textColor,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: 20, padding: "3px 10px",
+                    letterSpacing: 0.4, whiteSpace: "nowrap",
+                  }}
+                >
+                  {item.tamanho}
+                  <span style={{ opacity: i === 0 ? 0.85 : 0.7, fontSize: 10 }}>· {item.qtd}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function ProductCard({ p, tamanhos }) {
       const [open, setOpen] = useState(false);
       const [imgError, setImgError] = useState(false);
       const s = STATUS[p.status];
@@ -366,13 +421,16 @@
                   </div>
                 );
               })()}
+
+              {/* ── TAMANHOS ── */}
+              <TamanhosPills tamanhos={tamanhos} s={s} />
             </div>
           )}
         </div>
       );
     }
 
-    function GroupSection({ statusKey, products }) {
+    function GroupSection({ statusKey, products, tamanhoMap }) {
       const [collapsed, setCollapsed] = useState(false);
       const s = STATUS[statusKey];
       if (products.length === 0) return null;
@@ -391,7 +449,13 @@
             </div>
             <span style={{ fontSize: 10, color: "#C4BFB8", transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▲</span>
           </div>
-          {!collapsed && products.map(p => <ProductCard key={p.id || p.produto} p={p} />)}
+          {!collapsed && products.map(p => (
+            <ProductCard
+              key={p.id || p.produto}
+              p={p}
+              tamanhos={tamanhoMap[String(p.id)] || null}
+            />
+          ))}
         </div>
       );
     }
@@ -399,6 +463,7 @@
     function RadarPerformance() {
       const [search, setSearch] = useState("");
       const [products, setProducts] = React.useState([]);
+      const [tamanhoMap, setTamanhoMap] = React.useState({});
       const [loading, setLoading] = React.useState(true);
       const [autenticado, setAutenticado] = React.useState(false);
 
@@ -406,9 +471,12 @@
         if (!autenticado) return;
         Promise.all([
           fetch("/api/products").then(res => res.json()),
-          fetch("/api/product-images").then(res => res.json()).catch(() => ({ imageMap: {} }))
-        ]).then(([data, imgData]) => {
+          fetch("/api/product-images").then(res => res.json()).catch(() => ({ imageMap: {} })),
+          fetch("/api/tamanhos").then(res => res.json()).catch(() => ({ tamanhoMap: {} })),
+        ]).then(([data, imgData, tamData]) => {
           const imageMap = imgData.imageMap || {};
+          setTamanhoMap(tamData.tamanhoMap || {});
+
           const mapped = data.products.map(p => {
             const nomeKey = p.produto?.toLowerCase().trim();
             const img = imageMap[nomeKey] || null;
@@ -490,7 +558,9 @@
               style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, border: "1.5px solid #E0DDD8", borderRadius: 8, padding: "9px 14px", width: 250, background: "#fff", color: "#1a1a1a", outline: "none", marginBottom: 24 }}
             />
 
-            {ORDER.map(k => <GroupSection key={k} statusKey={k} products={grouped[k]} />)}
+            {ORDER.map(k => (
+              <GroupSection key={k} statusKey={k} products={grouped[k]} tamanhoMap={tamanhoMap} />
+            ))}
           </div>
         </div>
       );
