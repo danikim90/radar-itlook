@@ -453,7 +453,7 @@
             <ProductCard
               key={p.id || p.produto}
               p={p}
-              tamanhos={tamanhoMap[String(p.id)] || null}
+              tamanhos={tamanhoMap[p.name?.toLowerCase().trim()] || null}
             />
           ))}
         </div>
