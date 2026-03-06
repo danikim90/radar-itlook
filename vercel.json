@@ -3,6 +3,14 @@
     "api/products.js": {
       "memory": 512,
       "maxDuration": 30
+    },
+    "api/product-images.js": {
+      "memory": 512,
+      "maxDuration": 30
+    },
+    "api/tamanhos.js": {
+      "memory": 512,
+      "maxDuration": 30
     }
   }
 }
