@@ -14,22 +14,22 @@ export default async function handler(req, res) {
 
     const query = `
       SELECT
-        item_id,
+        produto,
         tamanho,
         qtd_vendida
       FROM \`itlook-analytics.analytics_395902084.vw_vendas_por_tamanho\`
-      WHERE tamanho IS NOT NULL
-      ORDER BY item_id, qtd_vendida DESC
+      WHERE tamanho IS NOT NULL AND produto IS NOT NULL
+      ORDER BY produto, qtd_vendida DESC
     `;
 
     const [rows] = await bigquery.query({ query });
 
-    // Agrupa por item_id: { "123": [ { tamanho: "M", qtd_vendida: 12 }, ... ] }
+    // Agrupa por nome do produto (lowercase trim para bater com o frontend)
     const tamanhoMap = {};
     for (const row of rows) {
-      const id = String(row.item_id);
-      if (!tamanhoMap[id]) tamanhoMap[id] = [];
-      tamanhoMap[id].push({ tamanho: row.tamanho, qtd: Number(row.qtd_vendida) });
+      const key = row.produto.toLowerCase().trim();
+      if (!tamanhoMap[key]) tamanhoMap[key] = [];
+      tamanhoMap[key].push({ tamanho: row.tamanho, qtd: Number(row.qtd_vendida) });
     }
 
     res.status(200).json({ tamanhoMap });
