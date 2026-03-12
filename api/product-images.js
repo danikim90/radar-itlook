@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://radar-itlook.vercel.app');
   
   const STORE_ID = process.env.NUVEMSHOP_STORE_ID;
   const ACCESS_TOKEN = process.env.NUVEMSHOP_ACCESS_TOKEN;

@@ -16,16 +16,24 @@
 
     let AVG_CTR = 0;
 
-    const SENHA_CORRETA = "itlook";
-
     function LoginScreen({ onLogin }) {
       const [senha, setSenha] = useState("");
       const [erro, setErro] = useState(false);
 
-      function handleSubmit() {
-        if (senha === SENHA_CORRETA) {
-          onLogin();
-        } else {
+      async function handleSubmit() {
+        try {
+          const res = await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ senha }),
+          });
+          if (res.ok) {
+            onLogin();
+          } else {
+            setErro(true);
+            setSenha("");
+          }
+        } catch {
           setErro(true);
           setSenha("");
         }
