@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     
     while (hasMore) {
       const response = await fetch(
-        `https://api.nuvemshop.com.br/v1/${STORE_ID}/products?fields=id,name,images,variants,promotional_price&per_page=200&page=${page}`,
+        `https://api.nuvemshop.com.br/v1/${STORE_ID}/products?fields=id,name,images,variants&per_page=200&page=${page}`,
         {
           headers: {
             'Authentication': `bearer ${ACCESS_TOKEN}`,
@@ -30,27 +30,19 @@ export default async function handler(req, res) {
     }
     
     const imageMap = {};
-    const saleProducts = [];
-
+    
     allProducts.forEach(product => {
       const imageUrl = product.images?.[0]?.src || null;
+      
       const nomeLimpo = product.name?.pt?.toLowerCase().trim();
-
-      const isSale = product.variants?.some(
-        v => v.promotional_price != null && parseFloat(v.promotional_price) > 0
-      );
-
-      if (isSale) {
-        if (nomeLimpo) saleProducts.push(nomeLimpo);
-      } else {
-        if (nomeLimpo) imageMap[nomeLimpo] = imageUrl;
-        product.variants?.forEach(variant => {
-          if (variant.sku) imageMap[variant.sku.toLowerCase()] = imageUrl;
-        });
-      }
+      if (nomeLimpo) imageMap[nomeLimpo] = imageUrl;
+      
+      product.variants?.forEach(variant => {
+        if (variant.sku) imageMap[variant.sku.toLowerCase()] = imageUrl;
+      });
     });
-
-    res.status(200).json({ imageMap, saleProducts, total: allProducts.length });
+    
+    res.status(200).json({ imageMap, total: allProducts.length });
     
   } catch (error) {
     res.status(500).json({ error: error.message });
