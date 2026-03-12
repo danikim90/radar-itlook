@@ -483,9 +483,10 @@
           fetch("/api/tamanhos").then(res => res.json()).catch(() => ({ tamanhoMap: {} })),
         ]).then(([data, imgData, tamData]) => {
           const imageMap = imgData.imageMap || {};
+          const saleSet = new Set(imgData.saleNames || []);
           setTamanhoMap(tamData.tamanhoMap || {});
 
-          const mapped = data.products.map(p => {
+          const mapped = data.products.filter(p => !saleSet.has(p.produto?.toLowerCase().trim())).map(p => {
             const nomeKey = p.produto?.toLowerCase().trim();
             const img = imageMap[nomeKey] || null;
             return { ...p, name: p.produto, img };
