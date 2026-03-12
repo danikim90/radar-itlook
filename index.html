@@ -300,7 +300,7 @@
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    function ProductCard({ p, tamanhos, medias }) {
+    function ProductCard({ p, tamanhos, medias, tamanhoMap }) {
       const [open, setOpen] = useState(false);
       const [imgError, setImgError] = useState(false);
       const s = STATUS[p.status];
@@ -443,6 +443,7 @@
       const [search, setSearch] = useState("");
       const [products, setProducts] = React.useState([]);
       const [tamanhoMap, setTamanhoMap] = React.useState({});
+      const [medias, setMedias] = React.useState({ mediaCTR: 0, mediaConv: 0, mediaAddRate: 0, mediaImpressoes: 0 });
       const [loading, setLoading] = React.useState(true);
       const [autenticado, setAutenticado] = React.useState(false);
 
@@ -465,12 +466,13 @@
           AVG_CTR = mapped.length > 0
             ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
             : 0;
-          const medias = {
+          const mediasCalc = {
             mediaCTR: AVG_CTR,
             mediaConv: mapped.length > 0 ? mapped.reduce((s, p) => s + (p.conversion_rate || 0), 0) / mapped.length : 0,
             mediaAddRate: mapped.length > 0 ? mapped.reduce((s, p) => s + (p.add_rate || 0), 0) / mapped.length : 0,
             mediaImpressoes: mapped.length > 0 ? mapped.reduce((s, p) => s + (p.impressoes || 0), 0) / mapped.length : 0,
           };
+          setMedias(mediasCalc);
           const withStatus = mapped.map(p => ({
             ...p,
             status: normalizeStatus(p.status_inteligente) || classify(p)
