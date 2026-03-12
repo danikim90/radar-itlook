@@ -25,6 +25,8 @@ export default async function handler(req, res) {
         status_inteligente
       FROM \`itlook-analytics.analytics_395902084.vw_produtos_inteligente\`
       WHERE produto IS NOT NULL
+        AND LOWER(produto) NOT LIKE '%compra r_pida%'
+        AND LOWER(produto) NOT LIKE '%compra rapida%'
       ORDER BY impressoes DESC
       LIMIT 200
     `;
