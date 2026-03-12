@@ -126,104 +126,74 @@
       }
     }
 
-    function getRecomendacao(p) {
-      const temImpressoes = p.impressoes >= 200;
-      const temCliques = p.cliques > 0;
-      const temCarrinho = p.carrinho > 0;
-      const temVendas = p.compras > 0;
+    function gerarSugestoes(p, medias, tamanhos) {
+      const { mediaCTR = 0, mediaConv = 0, mediaAddRate = 0, mediaImpressoes = 0 } = medias || {};
+      const acoes = [];
 
-      if (p.status === "estrela") {
-        return {
-          icone: "★",
-          titulo: "Produto funcionando bem",
-          acoes: [
-            "📦 Garanta estoque suficiente — este produto está convertendo",
-            "📸 Mesmo assim, melhorar a foto pode aumentar ainda mais o CTR",
-            "💰 Teste aumentar o preço em 5–10% e veja se a conversão se mantém",
-          ]
-        };
+      function topTamanho() {
+        if (!tamanhos || tamanhos.length === 0) return null;
+        return tamanhos.reduce((a, b) => (b.qtd > a.qtd ? b : a)).tamanho;
       }
 
-      if (p.status === "problema") {
-        if (temCarrinho && !temVendas) {
-          return {
-            icone: "⚠",
-            titulo: "Interesse alto, mas tranca na hora de comprar",
-            acoes: [
-              "💰 PREÇO — revise se está competitivo. Compare com produtos similares no mercado",
-              "🚚 Verifique se o frete está afastando o cliente na hora do checkout",
-              "📸 Fotos adicionais mostrando detalhes (tecido, caimento) podem dar mais segurança para comprar",
-            ]
-          };
+      if (p.status === "estrela") {
+        if (p.ctr > mediaCTR && p.conversion_rate < mediaConv) {
+          acoes.push("CTR acima da média mas conversão baixa — a página do produto pode estar decepcionando. Revise fotos internas, descrição e preço.");
         }
-        return {
-          icone: "⚠",
-          titulo: "Muita exposição mas sem resultado",
-          acoes: [
-            "📸 FOTO — a imagem principal não está vendendo o produto. Troque por uma foto com mais impacto visual",
-            "💰 Revise o preço — pode estar acima do que o cliente percebe como valor",
-            "👗 Avalie se o produto tem apelo para o público da IT Look (mulher 45–55, ocasião noturna)",
-          ]
-        };
+        if (p.conversion_rate > mediaConv * 1.5) {
+          acoes.push("Conversão excelente. Considere testar aumento de preço de 5–10% sem perder volume.");
+        }
+        const top = topTamanho();
+        if (top) {
+          acoes.push(`Tamanho ${top} é o mais vendido e pode estar sem estoque — verifique reposição urgente.`);
+        }
+        if (acoes.length === 0) acoes.push("Produto equilibrado. Mantenha visibilidade nos anúncios.");
+        return { icone: "★", titulo: "Produto funcionando bem", acoes };
       }
 
       if (p.status === "alto_interesse") {
-        return {
-          icone: "↑",
-          titulo: "Clica mas não compra",
-          acoes: [
-            "💰 PREÇO é o principal suspeito — o cliente se interessa mas não converte",
-            "📸 Revise as fotos adicionais dentro do produto — a primeira foto atrai, mas as demais precisam convencer",
-            "👗 Melhore a descrição: medidas, tecido, ocasião de uso ajudam a dar segurança para comprar",
-          ]
-        };
+        if (p.ctr < mediaCTR) {
+          acoes.push("Impressões altas mas poucos cliques — foto de vitrine pode estar fraca. Teste outra imagem de capa.");
+        }
+        if (p.add_rate > mediaAddRate && p.conversion_rate < mediaConv) {
+          acoes.push("Muitos adicionam ao carrinho mas poucos compram — possível objeção de preço ou frete. Considere frete grátis ou pequeno desconto.");
+        }
+        if (p.ctr > mediaCTR) {
+          acoes.push("Bom tráfego mas vendas ainda baixas — produto com potencial, aumente a exposição.");
+        }
+        if (acoes.length === 0) acoes.push("Produto com interesse mas sem conversão — revise preço e descrição.");
+        return { icone: "↑", titulo: "Clica mas não compra", acoes };
+      }
+
+      if (p.status === "problema") {
+        if (p.add_rate > mediaAddRate && p.compras === 0) {
+          acoes.push("Interesse real (carrinho alto) mas zero vendas — verifique se o checkout está funcionando ou se o preço está acima do mercado.");
+        }
+        if (p.impressoes > mediaImpressoes && p.compras === 0) {
+          acoes.push("Muito tráfego, nenhuma compra — problema sério de conversão. Revise foto principal, descrição e preço.");
+        }
+        if (acoes.length === 0) acoes.push("Produto sem tração. Considere pausar nos anúncios e revisar foto e preço.");
+        return { icone: "⚠", titulo: "Muita exposição mas sem resultado", acoes };
       }
 
       if (p.status === "invisivel") {
-        return {
-          icone: "○",
-          titulo: "Produto invisível — quase ninguém vê",
-          acoes: [
-            "📸 FOTO — no grid da loja, a imagem precisa se destacar para gerar clique. Invista em foto de impacto",
-            "🏷 Revise o título: inclua palavras que sua cliente busca (blazer festa, blusa elegante, calça social)",
-            "📣 Considere impulsionar este produto com um anúncio de baixo custo para gerar primeiros dados",
-          ]
-        };
+        if (p.impressoes < mediaImpressoes * 0.3) {
+          acoes.push("Produto sem tráfego — nunca foi exposto. Teste em campanha antes de descartar.");
+        } else {
+          acoes.push("Aparece mas ninguém clica — foto de lista sem apelo. Troque a imagem de capa.");
+        }
+        return { icone: "○", titulo: "Produto invisível — quase ninguém vê", acoes };
       }
 
-      if (!temImpressoes && !temCliques) {
-        return {
-          icone: "◎",
-          titulo: "Produto com pouca exposição ainda",
-          acoes: [
-            "📸 FOTO — comece pela imagem principal. No grid da loja, a foto é o que decide o clique",
-            "🏷 Revise o título e as tags para aparecer melhor nas buscas",
-            "💰 Verifique se o preço está alinhado com produtos similares da IT Look",
-          ]
-        };
+      // normal
+      if (tamanhos && tamanhos.length > 0) {
+        const totalVendas = tamanhos.reduce((s, t) => s + t.qtd, 0);
+        const topT = tamanhos.reduce((a, b) => (b.qtd > a.qtd ? b : a));
+        if (totalVendas > 0 && topT.qtd / totalVendas > 0.6) {
+          acoes.push(`Vendas concentradas no tamanho ${topT.tamanho} — na próxima compra, reforce esse tamanho na grade.`);
+        }
       }
-
-      if (temImpressoes && !temCliques && !temVendas) {
-        return {
-          icone: "◎",
-          titulo: "Aparece mas ninguém clica",
-          acoes: [
-            "📸 FOTO URGENTE — o produto aparece mas não atrai. A foto principal é o principal problema",
-            "🏷 Teste um título diferente que comunique melhor o benefício (ex: 'Blazer Alfaiataria Festa')",
-            "💰 Verifique se o preço exibido no grid está competitivo",
-          ]
-        };
-      }
-
-      return {
-        icone: "◎",
-        titulo: "Produto em desenvolvimento",
-        acoes: [
-          "📸 Avalie a qualidade da foto — é o primeiro filtro do cliente",
-          "💰 Compare o preço com produtos similares",
-          "👗 Revise se o produto está bem posicionado para o público IT Look",
-        ]
-      };
+      if (acoes.length === 0) acoes.push("Produto estável sem urgência. Monitore nas próximas semanas.");
+      return { icone: "◎", titulo: "Produto em desenvolvimento", acoes };
     }
 
     const STATUS = {
@@ -331,7 +301,7 @@
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    function ProductCard({ p, tamanhos }) {
+    function ProductCard({ p, tamanhos, medias }) {
       const [open, setOpen] = useState(false);
       const [imgError, setImgError] = useState(false);
       const s = STATUS[p.status];
@@ -415,7 +385,7 @@
               </div>
 
               {(() => {
-                const rec = getRecomendacao(p);
+                const rec = gerarSugestoes(p, medias, tamanhos);
                 return (
                   <div style={{ marginTop: 12, background: s.pillBg, border: `1px solid ${s.border}`, borderRadius: 8, padding: "12px 14px" }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: s.text, marginBottom: 8 }}>
@@ -462,6 +432,7 @@
               key={p.id || p.produto}
               p={p}
               tamanhos={tamanhoMap[p.name?.toLowerCase().trim()] || null}
+              medias={medias}
             />
           ))}
         </div>
@@ -472,6 +443,7 @@
       const [search, setSearch] = useState("");
       const [products, setProducts] = React.useState([]);
       const [tamanhoMap, setTamanhoMap] = React.useState({});
+      const [medias, setMedias] = React.useState({});
       const [loading, setLoading] = React.useState(true);
       const [autenticado, setAutenticado] = React.useState(false);
 
@@ -491,9 +463,14 @@
             const img = imageMap[nomeKey] || null;
             return { ...p, name: p.produto, img };
           });
-          AVG_CTR = mapped.length > 0
-            ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
-            : 0;
+          const n = mapped.length || 1;
+          AVG_CTR = mapped.reduce((s, p) => s + (p.ctr || 0), 0) / n;
+          setMedias({
+            mediaCTR:        AVG_CTR,
+            mediaConv:       mapped.reduce((s, p) => s + (p.conversion_rate || 0), 0) / n,
+            mediaAddRate:    mapped.reduce((s, p) => s + (p.add_rate || 0), 0) / n,
+            mediaImpressoes: mapped.reduce((s, p) => s + (p.impressoes || 0), 0) / n,
+          });
           const withStatus = mapped.map(p => ({
             ...p,
             status: normalizeStatus(p.status_inteligente) || classify(p)
