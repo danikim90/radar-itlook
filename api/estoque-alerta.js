@@ -80,8 +80,12 @@ export default async function handler(req, res) {
         const product = allProducts.find(p => p.id === Number(productId));
         const novasVariacoes = product.variants
           .filter(v => novosIds.includes(v.id))
-          .map(v => v.values?.map(val => val.pt || val.en).join(' / ') || String(v.id));
-        novosZerados.push({ name: data.name, image: data.image, variacoes: novasVariacoes });
+          .map(v => {
+            const vals = v.values;
+            const ultimo = vals?.[vals.length - 1];
+            return ultimo ? (ultimo.pt || ultimo.en) : String(v.id);
+          });
+        novosZerados.push({ name: data.name, variacoes: novasVariacoes });
       }
     }
 
@@ -90,18 +94,30 @@ export default async function handler(req, res) {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       const linhas = novosZerados.map(p =>
-        `<li><strong>${p.name}</strong>: ${p.variacoes.join(', ')}</li>`
+        `<tr>
+          <td style="padding:10px 16px;border-bottom:1px solid #eee;font-size:14px;color:#1a1a1a;">${p.name}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid #eee;font-size:14px;color:#555;">${p.variacoes.join(' · ')}</td>
+        </tr>`
       ).join('');
 
       await resend.emails.send({
         from: 'Radar ITLook <onboarding@resend.dev>',
         to: EMAIL_TO,
-        subject: `⚠️ Estoque zerado: ${novosZerados.length} produto(s)`,
+        subject: `Estoque zerado: ${novosZerados.length} produto(s)`,
         html: `
-          <h2>Alerta de Estoque — Radar ITLook</h2>
-          <p>${novosZerados.length} produto(s) tiveram variações zeradas desde a última checagem:</p>
-          <ul>${linhas}</ul>
-          <p style="color:#888;font-size:12px;">Gerado automaticamente pelo Radar ITLook</p>
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 0;">
+            <p style="font-size:13px;font-weight:600;letter-spacing:2px;color:#888;margin:0 0 24px;">RADAR ITLOOK · ALERTA DE ESTOQUE</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #eee;">
+              <thead>
+                <tr style="background:#f7f6f3;">
+                  <th style="padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:600;letter-spacing:1px;border-bottom:1px solid #eee;">PRODUTO</th>
+                  <th style="padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:600;letter-spacing:1px;border-bottom:1px solid #eee;">TAMANHOS ZERADOS</th>
+                </tr>
+              </thead>
+              <tbody>${linhas}</tbody>
+            </table>
+            <p style="font-size:11px;color:#bbb;margin:24px 0 0;">Gerado automaticamente · ${new Date().toLocaleDateString('pt-BR')}</p>
+          </div>
         `
       });
     }
