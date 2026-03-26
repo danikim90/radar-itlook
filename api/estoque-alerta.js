@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
     while (hasMore) {
       const response = await fetch(
-        `https://api.nuvemshop.com.br/v1/${STORE_ID}/products?fields=id,name,images,variants&per_page=200&page=${page}&published=true`,
+        `https://api.nuvemshop.com.br/v1/${STORE_ID}/products?fields=id,name,images,variants,categories&per_page=200&page=${page}&published=true`,
         {
           headers: {
             'Authentication': `bearer ${ACCESS_TOKEN}`,
@@ -34,11 +34,17 @@ export default async function handler(req, res) {
       if (products.length < 200) hasMore = false;
     }
 
-    // 2. Identificar variações com estoque zerado
+    // 2. Ignorar produtos da categoria SALE
+    const isSale = p => p.categories?.some(
+      c => c.name?.pt?.toLowerCase() === 'sale' || c.name?.en?.toLowerCase() === 'sale'
+    );
+
+    // 3. Identificar variações com estoque zerado (excluindo SALE)
     // snapshot = { [productId]: { zeroVariantIds: [...] } }
     const currentZero = {};
 
     for (const product of allProducts) {
+      if (isSale(product)) continue;
       if (!Array.isArray(product.variants)) continue;
       const zeroVariants = product.variants.filter(
         v => v.stock_management && v.stock !== null && v.stock <= 0
@@ -57,6 +63,10 @@ export default async function handler(req, res) {
       url: process.env.KV_REST_API_URL,
       token: process.env.KV_REST_API_TOKEN,
     });
+
+    if (req.query?.reset === 'true') {
+      await redis.del(KV_KEY);
+    }
 
     const previousSnapshot = (await redis.get(KV_KEY)) || {};
 
