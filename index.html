@@ -439,6 +439,97 @@
       );
     }
 
+    function EstoqueProdutoCard({ produto }) {
+      const [imgError, setImgError] = React.useState(false);
+      const totalZerados = produto.zerados.length;
+      const totalVariantes = produto.variantes.length;
+
+      return (
+        <div style={{
+          background: "#fff", border: "1.5px solid #ECEAE6", borderRadius: 12,
+          marginBottom: 10, overflow: "hidden", display: "flex", alignItems: "stretch"
+        }}>
+          <div style={{ width: 72, flexShrink: 0, background: "#F7F6F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {produto.image && !imgError ? (
+              <img src={produto.image} alt={produto.name}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }}
+                onError={() => setImgError(true)} />
+            ) : (
+              <span style={{ fontSize: 11, color: "#C4BFB8", fontWeight: 600 }}>
+                {produto.name.trim().split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div style={{ flex: 1, padding: "14px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a" }}>{produto.name}</div>
+              <span style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+                color: "#6B2020", background: "#F5DADA", border: "1px solid #E8B8B8",
+                borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap", marginLeft: 12
+              }}>
+                {totalZerados}/{totalVariantes} ZERADO{totalZerados !== 1 ? "S" : ""}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {produto.variantes.map(v => (
+                <span key={v.id} style={{
+                  fontSize: 11, fontWeight: 500, borderRadius: 20, padding: "3px 10px",
+                  border: `1px solid ${v.zerado ? "#E8B8B8" : "#C2D9C9"}`,
+                  background: v.zerado ? "#FAF0F0" : "#EDF4EF",
+                  color: v.zerado ? "#6B2020" : "#2D5A3D",
+                  whiteSpace: "nowrap"
+                }}>
+                  {v.nome}
+                  {v.zerado ? " ✕" : ` · ${v.stock}`}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function EstoqueTab() {
+      const [dados, setDados] = React.useState(null);
+      const [loading, setLoading] = React.useState(true);
+
+      React.useEffect(() => {
+        fetch("/api/estoque-status")
+          .then(r => r.json())
+          .then(d => { setDados(d); setLoading(false); })
+          .catch(() => setLoading(false));
+      }, []);
+
+      if (loading) return (
+        <div style={{ display: "flex", justifyContent: "center", padding: 60, color: "#B0A898", fontFamily: "'DM Sans', sans-serif" }}>
+          Carregando estoque...
+        </div>
+      );
+      if (!dados) return (
+        <div style={{ padding: 40, color: "#C45A5A", fontFamily: "'DM Sans', sans-serif" }}>Erro ao carregar dados.</div>
+      );
+
+      return (
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <div style={{ fontSize: 10, color: "#B0A898", letterSpacing: 1, fontWeight: 500 }}>PRODUTOS COM ESTOQUE ZERADO</div>
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: "#6B2020", background: "#F5DADA",
+              border: "1px solid #E8B8B8", borderRadius: 20, padding: "2px 10px"
+            }}>{dados.total}</span>
+          </div>
+          {dados.total === 0 ? (
+            <div style={{ textAlign: "center", padding: 60, color: "#B0A898", fontSize: 14 }}>
+              Nenhum produto com estoque zerado no momento.
+            </div>
+          ) : (
+            dados.produtos.map(p => <EstoqueProdutoCard key={p.id} produto={p} />)
+          )}
+        </div>
+      );
+    }
+
     function RadarPerformance() {
       const [search, setSearch] = useState("");
       const [products, setProducts] = React.useState([]);
@@ -446,6 +537,7 @@
       const [medias, setMedias] = React.useState({ mediaCTR: 0, mediaConv: 0, mediaAddRate: 0, mediaImpressoes: 0 });
       const [loading, setLoading] = React.useState(true);
       const [autenticado, setAutenticado] = React.useState(false);
+      const [aba, setAba] = React.useState("radar");
 
       React.useEffect(() => {
         if (!autenticado) return;
@@ -519,11 +611,25 @@
                 <span style={{ width: 1, height: 14, background: "#E0DDD8" }} />
                 <span style={{ fontSize: 11, color: "#B0A898", letterSpacing: 1.5, fontWeight: 500 }}>RADAR DE PERFORMANCE</span>
               </div>
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#C9A84C", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 600 }}>D</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {["radar", "estoque"].map(tab => (
+                    <button key={tab} onClick={() => setAba(tab)} style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600,
+                      letterSpacing: 1, padding: "6px 16px", borderRadius: 20, cursor: "pointer",
+                      border: `1.5px solid ${aba === tab ? "#1a1a1a" : "#E0DDD8"}`,
+                      background: aba === tab ? "#1a1a1a" : "transparent",
+                      color: aba === tab ? "#fff" : "#B0A898",
+                      textTransform: "uppercase", transition: "all 0.15s"
+                    }}>{tab === "radar" ? "Radar" : "Estoque"}</button>
+                  ))}
+                </div>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#C9A84C", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 600 }}>D</div>
+              </div>
             </div>
           </div>
 
-          <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
+          {aba === "estoque" ? <EstoqueTab /> : <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
               {[
                 { label: "Vendas Totais",     value: totalVendas,          sub: "últimos 30 dias",      color: STATUS.estrela.text },
@@ -549,7 +655,7 @@
             {ORDER.map(k => (
               <GroupSection key={k} statusKey={k} products={grouped[k]} tamanhoMap={tamanhoMap} medias={medias} />
             ))}
-          </div>
+          </div>}
         </div>
       );
     }

@@ -11,6 +11,16 @@
     "api/tamanhos.js": {
       "memory": 512,
       "maxDuration": 30
+    },
+    "api/estoque-alerta.js": {
+      "memory": 512,
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/estoque-alerta",
+      "schedule": "0 10 * * *"
+    }
+  ]
 }

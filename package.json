@@ -2,6 +2,8 @@
   "name": "radar-itlook",
   "version": "1.0.0",
   "dependencies": {
-    "@google-cloud/bigquery": "^7.3.0"
+    "@google-cloud/bigquery": "^7.3.0",
+    "@upstash/redis": "^1.37.0",
+    "resend": "^6.9.4"
   }
 }
