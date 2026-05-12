@@ -4,664 +4,619 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IT Look · Radar de Performance</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      font-size: 13px;
+    }
+
+    /* ---------- HEADER ---------- */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e3;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-size: 15px; font-weight: 600; color: #1a1a1a; letter-spacing: -0.3px; }
+    .logo span { color: #888; font-weight: 400; margin-left: 6px; font-size: 13px; }
+
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    select, input[type="text"] {
+      border: 1px solid #e0e0de;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #fff;
+      color: #1a1a1a;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus, input[type="text"]:focus { border-color: #aaa; }
+
+    .btn {
+      border: 1px solid #e0e0de;
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #fff;
+      color: #1a1a1a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #f5f5f3; }
+    .btn.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .btn.primary:hover { background: #333; }
+
+    /* ---------- METRICS SUMMARY ---------- */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 16px 24px;
+    }
+    .metric {
+      background: #fff;
+      border: 1px solid #e5e5e3;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .metric-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .metric-value { font-size: 22px; font-weight: 600; line-height: 1; }
+    .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+    .metric-value.danger { color: #c0392b; }
+    .metric-value.ok { color: #1a7a4a; }
+
+    /* ---------- TABLE WRAPPER ---------- */
+    .table-container {
+      padding: 0 24px 24px;
+    }
+    .table-wrap {
+      background: #fff;
+      border: 1px solid #e5e5e3;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* ---------- FILTER ROW ---------- */
+    .filter-bar {
+      display: grid;
+      grid-template-columns: 2fr 70px 70px 80px 70px 90px 70px 80px 90px;
+      gap: 6px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f0ee;
+      background: #fafaf8;
+    }
+    .filter-bar input {
+      width: 100%;
+      border: 1px solid #e5e5e3;
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 11px;
+      color: #555;
+      background: #fff;
+    }
+    .filter-bar input:focus { border-color: #999; outline: none; }
+
+    /* ---------- TABLE ---------- */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead th {
+      padding: 9px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      background: #fafaf8;
+      border-bottom: 1px solid #e5e5e3;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    thead th:hover { color: #1a1a1a; }
+    thead th .sort-icon { opacity: 0.4; margin-left: 3px; font-size: 9px; }
+    thead th.active .sort-icon { opacity: 1; }
+
+    /* column widths */
+    col.c-produto   { width: auto; }
+    col.c-img       { width: 40px; }
+    col.c-estoque   { width: 80px; }
+    col.c-ctr       { width: 72px; }
+    col.c-ctrs      { width: 86px; }
+    col.c-vpm       { width: 72px; }
+    col.c-imp       { width: 96px; }
+    col.c-cliques   { width: 72px; }
+    col.c-add       { width: 72px; }
+    col.c-conv      { width: 80px; }
+
+    tbody tr { border-bottom: 1px solid #f0f0ee; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafaf8; }
+
+    td {
+      padding: 8px 12px;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+
+    /* produto com imagem */
+    .cell-produto { display: flex; align-items: center; gap: 8px; }
+    .prod-img {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      object-fit: cover;
+      background: #f0f0ee;
+      flex-shrink: 0;
+      border: 1px solid #e5e5e3;
+    }
+    .prod-img-placeholder {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      background: #f0f0ee;
+      flex-shrink: 0;
+    }
+    .prod-nome { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* estoque bar */
+    .estoque-cell { display: flex; align-items: center; gap: 6px; }
+    .estoque-bar { width: 36px; height: 4px; background: #eee; border-radius: 2px; flex-shrink: 0; }
+    .estoque-fill { height: 100%; border-radius: 2px; }
+    .fill-ok   { background: #1a7a4a; }
+    .fill-mid  { background: #d4860a; }
+    .fill-low  { background: #c0392b; }
+
+    /* badges status */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge-danger  { background: #fde8e8; color: #a02020; }
+    .badge-warning { background: #fef3e2; color: #8a5a00; }
+    .badge-ok      { background: #e6f4ec; color: #1a5c38; }
+    .badge-muted   { background: #f0f0ee; color: #666; }
+
+    /* ---------- CATEGORY GROUP HEADER ---------- */
+    .cat-header td {
+      background: #f5f5f3;
+      font-weight: 600;
+      font-size: 11px;
+      color: #555;
+      padding: 7px 12px;
+      cursor: pointer;
+      border-top: 1px solid #e5e5e3;
+      user-select: none;
+    }
+    .cat-header:first-child td { border-top: none; }
+    .cat-header td:hover { background: #efefed; }
+    .cat-chevron { margin-right: 6px; display: inline-block; transition: transform 0.2s; font-size: 9px; }
+    .cat-collapsed .cat-chevron { transform: rotate(-90deg); }
+    .cat-count { font-weight: 400; opacity: 0.6; margin-left: 6px; }
+
+    /* ---------- EMPTY / LOADING ---------- */
+    .state-row td {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+      font-size: 13px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #e0e0de;
+      border-top-color: #888;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState } = React;
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">IT Look <span>Radar de Performance</span></div>
+  <div class="controls">
+    <select id="sel-periodo" onchange="onPeriodoChange()">
+      <option value="7">Últimos 7 dias</option>
+      <option value="30" selected>Últimos 30 dias</option>
+      <option value="60">Últimos 60 dias</option>
+      <option value="90">Últimos 90 dias</option>
+    </select>
+    <select id="sel-categoria" onchange="applyFilters()">
+      <option value="">Todas as categorias</option>
+    </select>
+    <select id="sel-status" onchange="applyFilters()">
+      <option value="">Todos os status</option>
+      <option value="critico">Estoque crítico (≤5)</option>
+      <option value="baixo">Estoque baixo (≤20)</option>
+      <option value="ok">Estoque ok</option>
+    </select>
+    <button class="btn" onclick="exportCSV()">↓ CSV</button>
+    <button class="btn primary" onclick="loadData()">↺ Atualizar</button>
+  </div>
+</div>
 
-    let AVG_CTR = 0;
+<!-- SUMMARY METRICS -->
+<div class="summary">
+  <div class="metric">
+    <div class="metric-label">Produtos monitorados</div>
+    <div class="metric-value" id="m-total">—</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">CTR médio</div>
+    <div class="metric-value" id="m-ctr">—</div>
+    <div class="metric-sub">cliques / impressões</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">CTR/Sessão médio</div>
+    <div class="metric-value" id="m-ctrs">—</div>
+    <div class="metric-sub">cliques / sessões</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">VPM médio</div>
+    <div class="metric-value" id="m-vpm">—</div>
+    <div class="metric-sub">vendas por mil imp.</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Estoque crítico</div>
+    <div class="metric-value danger" id="m-critico">—</div>
+    <div class="metric-sub">produtos com ≤5 unid.</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Total impressões</div>
+    <div class="metric-value" id="m-imp">—</div>
+  </div>
+</div>
 
-    function LoginScreen({ onLogin }) {
-      const [senha, setSenha] = useState("");
-      const [erro, setErro] = useState(false);
+<!-- TABLE -->
+<div class="table-container">
+  <div class="table-wrap">
 
-      async function handleSubmit() {
-        try {
-          const res = await fetch("/api/auth", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ senha }),
-          });
-          if (res.ok) {
-            onLogin();
-          } else {
-            setErro(true);
-            setSenha("");
-          }
-        } catch {
-          setErro(true);
-          setSenha("");
-        }
+    <!-- filter bar -->
+    <div class="filter-bar">
+      <input type="text" id="f-produto"   placeholder="🔍 Produto..."     oninput="applyFilters()">
+      <input type="text" id="f-estoque"   placeholder="Estoque ≥"         oninput="applyFilters()">
+      <input type="text" id="f-ctr"       placeholder="CTR ≥"             oninput="applyFilters()">
+      <input type="text" id="f-ctrs"      placeholder="CTR/Ses ≥"         oninput="applyFilters()">
+      <input type="text" id="f-vpm"       placeholder="VPM ≥"             oninput="applyFilters()">
+      <input type="text" id="f-imp"       placeholder="Imp. ≥"            oninput="applyFilters()">
+      <input type="text" id="f-cliques"   placeholder="Cliques ≥"         oninput="applyFilters()">
+      <input type="text" id="f-add"       placeholder="Add% ≥"            oninput="applyFilters()">
+      <input type="text" id="f-conv"      placeholder="Conv% ≥"           oninput="applyFilters()">
+    </div>
+
+    <table>
+      <colgroup>
+        <col class="c-produto">
+        <col class="c-estoque">
+        <col class="c-ctr">
+        <col class="c-ctrs">
+        <col class="c-vpm">
+        <col class="c-imp">
+        <col class="c-cliques">
+        <col class="c-add">
+        <col class="c-conv">
+      </colgroup>
+      <thead>
+        <tr>
+          <th onclick="sortBy('produto')">Produto <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('estoque')">Estoque <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('ctr')" class="active">CTR% <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('ctr_sessao')">CTR/Ses <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('vpm')">VPM <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('impressoes')">Impressões <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('cliques')">Cliques <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('add_rate')">Add% <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('conversion_rate')">Conv% <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="state-row"><td colspan="9"><span class="spinner"></span> Carregando dados...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // ── Estado global ──────────────────────────────────────────────
+  let rawData = [];          // produtos do BigQuery
+  let estoqueMap = {};       // { nomeProduto: qtd }
+  let categoriaMap = {};     // { nomeProduto: categoria }
+  let imageMap = {};         // { nomeProduto: url }
+  let filteredData = [];
+  let collapsedCats = {};
+  let sortKey = 'impressoes';
+  let sortDir = -1;
+
+  // ── Inicialização ──────────────────────────────────────────────
+  async function loadData() {
+    setLoading(true);
+    const dias = document.getElementById('sel-periodo').value;
+
+    try {
+      const [prodRes, estoqueRes, imgRes] = await Promise.all([
+        fetch(`/api/products?dias=${dias}`),
+        fetch('/api/estoque'),
+        fetch('/api/product-images'),
+      ]);
+
+      const prodJson    = await prodRes.json();
+      const estoqueJson = await estoqueRes.json();
+      const imgJson     = await imgRes.json();
+
+      if (!prodRes.ok) {
+        showError(`/api/products ${prodRes.status}: ${prodJson.details || prodJson.error || 'erro desconhecido'}`);
+        return;
+      }
+      if (!estoqueRes.ok) {
+        showError(`/api/estoque ${estoqueRes.status}: ${estoqueJson.error || 'erro desconhecido'}`);
+        return;
       }
 
-      return (
-        <div style={{
-          display: "flex", justifyContent: "center", alignItems: "center",
-          height: "100vh", background: "#F7F6F3", fontFamily: "'DM Sans', sans-serif"
-        }}>
-          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');`}</style>
-          <div style={{
-            background: "#fff", border: "1.5px solid #ECEAE6", borderRadius: 16,
-            padding: "40px 48px", display: "flex", flexDirection: "column", alignItems: "center", gap: 24, minWidth: 320
-          }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: 3, color: "#1a1a1a" }}>IT LOOK</span>
-              <span style={{ fontSize: 11, color: "#B0A898", letterSpacing: 1.5, fontWeight: 500 }}>RADAR DE PERFORMANCE</span>
-            </div>
+      rawData      = prodJson.products || [];
+      estoqueMap   = estoqueJson.estoqueMap || {};
+      categoriaMap = estoqueJson.categoriaMap || {};
+      imageMap     = imgJson.imageMap || {};
 
-            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-              <input
-                type="password"
-                placeholder="Senha"
-                value={senha}
-                onChange={e => { setSenha(e.target.value); setErro(false); }}
-                onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                style={{
-                  fontFamily: "'DM Sans', sans-serif", fontSize: 14,
-                  border: `1.5px solid ${erro ? "#C45A5A" : "#E0DDD8"}`,
-                  borderRadius: 8, padding: "10px 14px", width: "100%",
-                  outline: "none", color: "#1a1a1a", background: "#fff"
-                }}
-              />
-              {erro && <span style={{ fontSize: 12, color: "#C45A5A" }}>Senha incorreta. Tente novamente.</span>}
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              style={{
-                width: "100%", padding: "11px 0", background: "#1a1a1a", color: "#fff",
-                border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                letterSpacing: 1, cursor: "pointer", fontFamily: "'DM Sans', sans-serif"
-              }}
-            >
-              ENTRAR
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    const STATUS_MAP = {
-      "estrela": "estrela",
-      "alto interesse": "alto_interesse",
-      "alto_interesse": "alto_interesse",
-      "normal": "normal",
-      "problema": "problema",
-      "invisivel": "invisivel",
-      "invisível": "invisivel",
-    };
-
-    function normalizeStatus(raw) {
-      if (!raw) return null;
-      return STATUS_MAP[raw.toString().toLowerCase().trim()] || null;
-    }
-
-    function classify(p) {
-      const hasPurchases = p.compras >= 1;
-      const hasCart = p.carrinho > 0;
-      const highImpressions = p.impressoes > 200;
-      const highCTR = AVG_CTR > 0 ? p.ctr >= AVG_CTR : p.ctr > 0;
-      if (hasPurchases && (highCTR || p.compras >= 2)) return "estrela";
-      if (highImpressions && hasCart && p.compras === 0) return "problema";
-      if (highCTR && !hasPurchases) return "alto_interesse";
-      if (p.impressoes < 50 && p.compras === 0) return "invisivel";
-      return "normal";
-    }
-
-    function calcScore(p) {
-      switch (p.status) {
-        case "estrela":
-          return (p.compras || 0) * (p.ctr || 0) * (p.conversion_rate || 0);
-        case "alto_interesse":
-          return (p.cliques || 0) * (p.ctr || 0);
-        case "problema":
-          return (p.impressoes || 0) * (p.add_rate || 0);
-        default:
-          return p.impressoes || 0;
-      }
-    }
-
-    function gerarSugestoes(p, medias, tamanhoMap) {
-      const sugestoes = [];
-      const tam = tamanhoMap[p.name?.toLowerCase().trim()] || [];
-      const maisVendido = tam.length > 0 ? tam.reduce((a, b) => b.qtd > a.qtd ? b : a, tam[0]) : null;
-      const totalVendasTam = tam.reduce((s, t) => s + t.qtd, 0);
-
-      if (p.status === "estrela") {
-        if (p.ctr > medias.mediaCTR && p.conversion_rate < medias.mediaConv) {
-          sugestoes.push("CTR acima da média mas conversão baixa — a página do produto pode estar decepcionando. Revise fotos internas, descrição e preço.");
-        }
-        if (p.conversion_rate > medias.mediaConv * 1.5) {
-          sugestoes.push("Conversão excelente. Considere testar aumento de preço de 5–10% sem perder volume.");
-        }
-        if (maisVendido && maisVendido.qtd === 0) {
-          sugestoes.push(`Tamanho ${maisVendido.tamanho} é o mais vendido e pode estar sem estoque — verifique reposição urgente.`);
-        }
-        if (sugestoes.length === 0) {
-          sugestoes.push("Produto equilibrado. Mantenha visibilidade nos anúncios.");
-        }
+      if (rawData.length === 0) {
+        showError('A API retornou 0 produtos. Verifique se a view vw_radar_completo foi criada no BigQuery.');
+        return;
       }
 
-      else if (p.status === "alto_interesse") {
-        if (p.ctr < medias.mediaCTR) {
-          sugestoes.push("Impressões altas mas poucos cliques — foto de vitrine pode estar fraca. Teste outra imagem de capa.");
-        }
-        if (p.add_rate > medias.mediaAddRate && p.conversion_rate < medias.mediaConv) {
-          sugestoes.push("Muitos adicionam ao carrinho mas poucos compram — possível objeção de preço ou frete. Considere frete grátis ou pequeno desconto.");
-        }
-        if (p.ctr > medias.mediaCTR) {
-          sugestoes.push("Bom tráfego mas vendas ainda baixas — produto com potencial, aumente a exposição.");
-        }
-        if (sugestoes.length === 0) {
-          sugestoes.push("Produto com interesse. Monitore nas próximas semanas.");
-        }
+      populateCategoriaSelect();
+      applyFilters();
+    } catch (e) {
+      showError('Erro ao carregar dados: ' + e.message);
+    }
+  }
+
+  function onPeriodoChange() { loadData(); }
+
+  // ── Filtros e ordenação ────────────────────────────────────────
+  function applyFilters() {
+    const fProd  = v('f-produto').toLowerCase();
+    const fEst   = num('f-estoque');
+    const fCtr   = num('f-ctr');
+    const fCtrs  = num('f-ctrs');
+    const fVpm   = num('f-vpm');
+    const fImp   = num('f-imp');
+    const fCli   = num('f-cliques');
+    const fAdd   = num('f-add');
+    const fConv  = num('f-conv');
+    const fCat   = v('sel-categoria');
+    const fSt    = v('sel-status');
+
+    filteredData = rawData.filter(p => {
+      const nome = (p.produto || '').toLowerCase();
+      const cat  = (categoriaMap[nome] || 'Sem categoria');
+      const est  = estoqueMap[nome] ?? null;
+
+      if (fProd && !nome.includes(fProd)) return false;
+      if (fCat  && cat !== fCat) return false;
+      if (fEst  !== null && est !== null && est < fEst) return false;
+      if (fCtr  !== null && pct(p.ctr) < fCtr) return false;
+      if (fCtrs !== null && pct(p.ctr_sessao) < fCtrs) return false;
+      if (fVpm  !== null && pct(p.vpm) < fVpm) return false;
+      if (fImp  !== null && p.impressoes < fImp) return false;
+      if (fCli  !== null && p.cliques < fCli) return false;
+      if (fAdd  !== null && pct(p.add_rate) < fAdd) return false;
+      if (fConv !== null && pct(p.conversion_rate) < fConv) return false;
+
+      if (fSt === 'critico' && (est === null || est > 5)) return false;
+      if (fSt === 'baixo'   && (est === null || est > 20 || est <= 5)) return false;
+      if (fSt === 'ok'      && (est === null || est <= 20)) return false;
+
+      return true;
+    });
+
+    filteredData.sort((a, b) => {
+      let va = sortKey === 'produto'  ? (a.produto || '') :
+               sortKey === 'estoque'  ? (estoqueMap[(a.produto||'').toLowerCase()] ?? -1) :
+               parseFloat(a[sortKey]) || 0;
+      let vb = sortKey === 'produto'  ? (b.produto || '') :
+               sortKey === 'estoque'  ? (estoqueMap[(b.produto||'').toLowerCase()] ?? -1) :
+               parseFloat(b[sortKey]) || 0;
+      if (va < vb) return sortDir;
+      if (va > vb) return -sortDir;
+      return 0;
+    });
+
+    renderTable();
+    updateSummary();
+  }
+
+  function sortBy(key) {
+    sortDir = (sortKey === key) ? -sortDir : -1;
+    sortKey = key;
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('active'));
+    applyFilters();
+  }
+
+  // ── Render ─────────────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('tbody');
+    if (!filteredData.length) {
+      tbody.innerHTML = `<tr class="state-row"><td colspan="9">Nenhum produto encontrado</td></tr>`;
+      return;
+    }
+
+    // Agrupar por categoria
+    const groups = {};
+    filteredData.forEach(p => {
+      const nome = (p.produto || '').toLowerCase();
+      const cat  = categoriaMap[nome] || 'Sem categoria';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(p);
+    });
+
+    const cats = Object.keys(groups).sort();
+    let html = '';
+
+    cats.forEach(cat => {
+      const rows  = groups[cat];
+      const isCol = collapsedCats[cat];
+      html += `
+        <tr class="cat-header ${isCol ? 'cat-collapsed' : ''}" onclick="toggleCat('${cat.replace(/'/g,"\\'")}')">
+          <td colspan="9">
+            <span class="cat-chevron">▾</span>${cat}
+            <span class="cat-count">${rows.length} produto${rows.length > 1 ? 's' : ''}</span>
+          </td>
+        </tr>`;
+
+      if (!isCol) {
+        rows.forEach(p => { html += buildRow(p); });
       }
+    });
 
-      else if (p.status === "problema") {
-        if (p.add_rate > medias.mediaAddRate && p.compras === 0) {
-          sugestoes.push("Interesse real (carrinho alto) mas zero vendas — verifique se o checkout está funcionando ou se o preço está acima do mercado.");
-        }
-        if (p.impressoes > medias.mediaImpressoes && p.compras === 0) {
-          sugestoes.push("Muito tráfego, nenhuma compra — problema sério de conversão. Revise foto principal, descrição e preço.");
-        }
-        if (sugestoes.length === 0) {
-          sugestoes.push("Produto sem tração. Considere pausar nos anúncios e revisar foto e preço.");
-        }
-      }
+    tbody.innerHTML = html;
+  }
 
-      else if (p.status === "invisivel") {
-        if (p.impressoes < medias.mediaImpressoes * 0.3) {
-          sugestoes.push("Produto sem tráfego — nunca foi exposto. Teste em campanha antes de descartar.");
-        } else {
-          sugestoes.push("Aparece mas ninguém clica — foto de lista sem apelo. Troque a imagem de capa.");
-        }
-      }
+  function buildRow(p) {
+    const nome     = (p.produto || '').toLowerCase();
+    const imgUrl   = imageMap[nome] || null;
+    const estoque  = estoqueMap[nome] ?? null;
+    const ctr      = pct(p.ctr);
+    const ctrs     = pct(p.ctr_sessao);
+    const vpm      = pct(p.vpm);
+    const add      = pct(p.add_rate);
+    const conv     = pct(p.conversion_rate);
 
-      else {
-        if (maisVendido && totalVendasTam > 0 && (maisVendido.qtd / totalVendasTam) > 0.6) {
-          sugestoes.push(`Vendas concentradas no tamanho ${maisVendido.tamanho} — na próxima compra, reforce esse tamanho na grade.`);
-        } else {
-          sugestoes.push("Produto estável sem urgência. Monitore nas próximas semanas.");
-        }
-      }
+    const estClass = estoque === null ? '' : estoque <= 5 ? 'fill-low' : estoque <= 20 ? 'fill-mid' : 'fill-ok';
+    const estPct   = estoque === null ? 0 : Math.min(100, Math.round(estoque / 100 * 100));
+    const estText  = estoque === null ? '—' : estoque;
 
-      const icones = { estrela: "★", alto_interesse: "↑", problema: "⚠", invisivel: "○", normal: "◎" };
-      const titulos = { estrela: "Produto funcionando bem", alto_interesse: "Clica mas não compra", problema: "Atenção necessária", invisivel: "Produto invisível", normal: "Performance normal" };
-      return { icone: icones[p.status] || "◎", titulo: titulos[p.status] || "Análise", acoes: sugestoes };
-    }
+    const imgHtml  = imgUrl
+      ? `<img class="prod-img" src="${imgUrl}" alt="" loading="lazy">`
+      : `<div class="prod-img-placeholder"></div>`;
 
-    const STATUS = {
-      estrela:        { label: "Estrela",        icon: "★", text: "#2D5A3D", bg: "#EDF4EF", border: "#C2D9C9", dot: "#5A9970", pillBg: "#E0EEE5" },
-      alto_interesse: { label: "Alto Interesse", icon: "↑", text: "#1E3A5F", bg: "#EDF2F8", border: "#B8CEEA", dot: "#5A7FA8", pillBg: "#DDE9F5" },
-      normal:         { label: "Normal",         icon: "◎", text: "#6B5A00", bg: "#FBF8EE", border: "#E8D98A", dot: "#C4A832", pillBg: "#F5EDBB" },
-      problema:       { label: "Problema",       icon: "!", text: "#6B2020", bg: "#FAF0F0", border: "#E8B8B8", dot: "#C45A5A", pillBg: "#F5DADA" },
-      invisivel:      { label: "Invisível",      icon: "○", text: "#5C5470", bg: "#F3F1F8", border: "#D4CEEA", dot: "#9B92C0", pillBg: "#EAE7F5" },
-    };
-
-    const ORDER = ["estrela", "alto_interesse", "normal", "problema", "invisivel"];
-    const fmt = n => (typeof n === "number" && !isNaN(n)) ? n.toLocaleString("pt-BR") : "—";
-
-    function Tag({ s }) {
-      return (
-        <span style={{
-          display: "inline-flex", alignItems: "center", gap: 4,
-          fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600,
-          color: s.text, background: s.pillBg, border: `1px solid ${s.border}`,
-          borderRadius: 20, padding: "3px 10px", letterSpacing: 0.8, whiteSpace: "nowrap"
-        }}>
-          {s.icon} {s.label.toUpperCase()}
-        </span>
-      );
-    }
-
-    function Pill({ label, value, color }) {
-      return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, fontWeight: 500 }}>{label.toUpperCase()}</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: color || "#374151" }}>{value}</span>
+    return `<tr>
+      <td>
+        <div class="cell-produto">
+          ${imgHtml}
+          <span class="prod-nome" title="${p.produto}">${p.produto}</span>
         </div>
-      );
-    }
-
-    function ImagePlaceholder({ name, s }) {
-      const initials = name
-        ? name.trim().split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()
-        : "IT";
-      return (
-        <div style={{
-          width: "100%", height: "100%", minHeight: 80,
-          background: s.pillBg,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", gap: 2,
-        }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: s.dot, letterSpacing: 1 }}>{initials}</span>
-          <span style={{ fontSize: 7, color: s.dot, opacity: 0.6, letterSpacing: 0.5 }}>SEM FOTO</span>
+      </td>
+      <td>
+        <div class="estoque-cell">
+          <span>${estText}</span>
+          <div class="estoque-bar"><div class="estoque-fill ${estClass}" style="width:${estPct}%"></div></div>
         </div>
-      );
-    }
+      </td>
+      <td>${ctr.toFixed(1)}%</td>
+      <td>${ctrs.toFixed(1)}%</td>
+      <td>${vpm.toFixed(1)}</td>
+      <td>${fmt(p.impressoes)}</td>
+      <td>${fmt(p.cliques)}</td>
+      <td>${add.toFixed(1)}%</td>
+      <td>${conv.toFixed(1)}%</td>
+    </tr>`;
+  }
 
-    // ─── BLOCO DE TAMANHOS ────────────────────────────────────────────────────
-    function TamanhosPills({ tamanhos, s }) {
-      if (!tamanhos || tamanhos.length === 0) {
-        return (
-          <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${s.border}` }}>
-            <span style={{ fontSize: 10, color: "#C4BFB8", letterSpacing: 0.5 }}>Nenhuma venda no período</span>
-          </div>
-        );
-      }
+  function toggleCat(cat) {
+    collapsedCats[cat] = !collapsedCats[cat];
+    renderTable();
+  }
 
-      // Ordenado do mais vendido pro menos (já vem ordenado da API, mas garante)
-      const sorted = [...tamanhos].sort((a, b) => b.qtd - a.qtd);
+  // ── Summary cards ──────────────────────────────────────────────
+  function updateSummary() {
+    const d = filteredData;
+    const avg = (key) => d.length ? d.reduce((s, p) => s + (pct(p[key]) || 0), 0) / d.length : 0;
+    const criticos = d.filter(p => {
+      const e = estoqueMap[(p.produto||'').toLowerCase()];
+      return e !== undefined && e <= 5;
+    }).length;
+    const totalImp = d.reduce((s, p) => s + (parseInt(p.impressoes) || 0), 0);
 
-      return (
-        <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${s.border}` }}>
-          <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, fontWeight: 500, marginBottom: 6 }}>
-            VENDAS POR TAMANHO
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {sorted.map((item, i) => {
-              // Top 1: cor forte, Top 2: média, Top 3: clara, demais: apagada
-              let bg, textColor, borderColor;
-              if (i === 0) {
-                bg = s.dot; textColor = "#fff"; borderColor = s.dot;
-              } else if (i === 1) {
-                bg = s.pillBg; textColor = s.text; borderColor = s.border;
-              } else if (i === 2) {
-                bg = "#F7F6F3"; textColor = s.text; borderColor = s.border;
-              } else {
-                bg = "#F7F6F3"; textColor = "#C4BFB8"; borderColor = "#E0DDD8";
-              }
+    set('m-total',   d.length);
+    set('m-ctr',     avg('ctr').toFixed(1) + '%');
+    set('m-ctrs',    avg('ctr_sessao').toFixed(1) + '%');
+    set('m-vpm',     avg('vpm').toFixed(1));
+    set('m-critico', criticos);
+    set('m-imp',     fmt(totalImp));
+  }
 
-              return (
-                <span
-                  key={item.tamanho}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 4,
-                    fontSize: 11, fontWeight: i === 0 ? 600 : 500,
-                    background: bg, color: textColor,
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: 20, padding: "3px 10px",
-                    letterSpacing: 0.4, whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.tamanho}
-                  <span style={{ opacity: i === 0 ? 0.85 : 0.7, fontSize: 10 }}>· {item.qtd}</span>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-    // ─────────────────────────────────────────────────────────────────────────
+  // ── Categorias no select ───────────────────────────────────────
+  function populateCategoriaSelect() {
+    const cats = [...new Set(Object.values(categoriaMap))].sort();
+    const sel  = document.getElementById('sel-categoria');
+    sel.innerHTML = '<option value="">Todas as categorias</option>';
+    cats.forEach(c => {
+      sel.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+  }
 
-    function ProductCard({ p, tamanhos, medias, tamanhoMap }) {
-      const [open, setOpen] = useState(false);
-      const [imgError, setImgError] = useState(false);
-      const s = STATUS[p.status];
+  // ── Export CSV ────────────────────────────────────────────────
+  function exportCSV() {
+    const headers = ['Categoria','Produto','Estoque','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%'];
+    const rows = filteredData.map(p => {
+      const nome = (p.produto || '').toLowerCase();
+      return [
+        categoriaMap[nome] || 'Sem categoria',
+        p.produto,
+        estoqueMap[nome] ?? '',
+        pct(p.ctr).toFixed(2),
+        pct(p.ctr_sessao).toFixed(2),
+        pct(p.vpm).toFixed(2),
+        p.impressoes,
+        p.cliques,
+        pct(p.add_rate).toFixed(2),
+        pct(p.conversion_rate).toFixed(2),
+      ];
+    });
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const a   = document.createElement('a');
+    a.href    = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+    a.download = `radar-itlook-${document.getElementById('sel-periodo').value}d.csv`;
+    a.click();
+  }
 
-      const convRate = p.impressoes > 0 ? ((p.compras / p.impressoes) * 100).toFixed(2) + "%" : "—";
-      const addRate  = p.impressoes > 0 ? ((p.carrinho / p.impressoes) * 100).toFixed(2) + "%" : "—";
+  // ── Utilitários ────────────────────────────────────────────────
+  function pct(v)  { return parseFloat(v) || 0; }
+  function v(id)   { return document.getElementById(id)?.value?.trim() || ''; }
+  function num(id) { const n = parseFloat(v(id)); return isNaN(n) ? null : n; }
+  function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+  function fmt(n)  { return (parseInt(n) || 0).toLocaleString('pt-BR'); }
 
-      return (
-        <div
-          style={{
-            background: open ? s.bg : "#fff",
-            border: `1.5px solid ${open ? s.border : "#ECEAE6"}`,
-            borderRadius: 12,
-            marginBottom: 10,
-            overflow: "hidden",
-            transition: "all 0.18s",
-            cursor: "pointer",
-          }}
-          onClick={() => setOpen(o => !o)}
-          onMouseEnter={e => { if (!open) e.currentTarget.style.borderColor = s.border; }}
-          onMouseLeave={e => { if (!open) e.currentTarget.style.borderColor = "#ECEAE6"; }}
-        >
-          <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
-            <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden" }}>
-              {p.img && !imgError ? (
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }}
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <ImagePlaceholder name={p.name} s={s} />
-              )}
-              <div style={{
-                position: "absolute", top: 8, left: 8,
-                width: 8, height: 8, borderRadius: "50%",
-                background: s.dot, boxShadow: "0 0 0 2px white"
-              }} />
-            </div>
+  function setLoading(on) {
+    if (on) document.getElementById('tbody').innerHTML =
+      `<tr class="state-row"><td colspan="9"><span class="spinner"></span> Carregando dados...</td></tr>`;
+  }
+  function showError(msg) {
+    document.getElementById('tbody').innerHTML =
+      `<tr class="state-row"><td colspan="9">⚠ ${msg}</td></tr>`;
+  }
 
-            <div style={{ flex: 1, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {p.name}
-                </div>
-                <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                  <Pill label="Impressões" value={fmt(p.impressoes)} />
-                  <Pill label="CTR" value={`${(p.ctr || 0).toFixed(1)}%`} color={p.ctr >= AVG_CTR ? s.text : "#6B7280"} />
-                  <Pill label="Carrinho" value={p.carrinho} color={p.carrinho > 0 ? "#2D6A4F" : "#9CA3AF"} />
-                  <Pill label="Compras" value={p.compras} color={p.compras > 0 ? s.text : "#9CA3AF"} />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-                {p.compras > 0 && (
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: s.dot, lineHeight: 1 }}>{p.compras}</div>
-                    <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, marginTop: 2 }}>VENDAS</div>
-                  </div>
-                )}
-                <Tag s={s} />
-              </div>
-            </div>
-          </div>
-
-          {open && (
-            <div style={{ padding: "14px 16px 16px", borderTop: `1px solid ${s.border}`, background: s.bg }}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {[
-                  { label: "Cliques",    value: fmt(p.cliques) },
-                  { label: "Add Rate",   value: addRate },
-                  { label: "Conv. Rate", value: convRate },
-                  { label: "CTR médio",  value: `${AVG_CTR.toFixed(1)}%` },
-                ].map(({ label, value }) => (
-                  <div key={label} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", border: `1px solid ${s.border}` }}>
-                    <div style={{ fontSize: 9, color: "#B0A898", letterSpacing: 0.8, marginBottom: 4, fontWeight: 500 }}>{label.toUpperCase()}</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: s.text }}>{value}</div>
-                  </div>
-                ))}
-              </div>
-
-              {(() => {
-                const rec = gerarSugestoes(p, medias || {}, tamanhoMap || {});
-                return (
-                  <div style={{ marginTop: 12, background: s.pillBg, border: `1px solid ${s.border}`, borderRadius: 8, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: s.text, marginBottom: 8 }}>
-                      {rec.icone} {rec.titulo}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {rec.acoes.map((acao, i) => (
-                        <div key={i} style={{ fontSize: 12, color: s.text, lineHeight: 1.5 }}>{acao}</div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── TAMANHOS ── */}
-              <TamanhosPills tamanhos={tamanhos} s={s} />
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function GroupSection({ statusKey, products, tamanhoMap, medias }) {
-      const [collapsed, setCollapsed] = useState(false);
-      const s = STATUS[statusKey];
-      if (products.length === 0) return null;
-      const totalPurchases = products.reduce((a, p) => a + (p.compras || 0), 0);
-
-      return (
-        <div style={{ marginBottom: 28 }}>
-          <div
-            onClick={() => setCollapsed(c => !c)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, cursor: "pointer", userSelect: "none" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Tag s={s} />
-              <span style={{ fontSize: 12, color: "#B0A898" }}>{products.length} produto{products.length !== 1 ? "s" : ""}</span>
-              {totalPurchases > 0 && <span style={{ fontSize: 12, color: s.text, fontWeight: 500 }}>· {totalPurchases} venda{totalPurchases !== 1 ? "s" : ""}</span>}
-            </div>
-            <span style={{ fontSize: 10, color: "#C4BFB8", transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▲</span>
-          </div>
-          {!collapsed && products.map(p => (
-            <ProductCard
-              key={p.id || p.produto}
-              p={p}
-              tamanhos={tamanhoMap[p.name?.toLowerCase().trim()] || null}
-              medias={medias}
-              tamanhoMap={tamanhoMap}
-            />
-          ))}
-        </div>
-      );
-    }
-
-    function EstoqueProdutoCard({ produto }) {
-      const [imgError, setImgError] = React.useState(false);
-      const totalZerados = produto.zerados.length;
-      const totalVariantes = produto.variantes.length;
-
-      return (
-        <div style={{
-          background: "#fff", border: "1.5px solid #ECEAE6", borderRadius: 12,
-          marginBottom: 10, overflow: "hidden", display: "flex", alignItems: "stretch"
-        }}>
-          <div style={{ width: 72, flexShrink: 0, background: "#F7F6F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {produto.image && !imgError ? (
-              <img src={produto.image} alt={produto.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }}
-                onError={() => setImgError(true)} />
-            ) : (
-              <span style={{ fontSize: 11, color: "#C4BFB8", fontWeight: 600 }}>
-                {produto.name.trim().split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div style={{ flex: 1, padding: "14px 16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a" }}>{produto.name}</div>
-              <span style={{
-                fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
-                color: "#6B2020", background: "#F5DADA", border: "1px solid #E8B8B8",
-                borderRadius: 20, padding: "3px 10px", whiteSpace: "nowrap", marginLeft: 12
-              }}>
-                {totalZerados}/{totalVariantes} ZERADO{totalZerados !== 1 ? "S" : ""}
-              </span>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {produto.variantes.map(v => (
-                <span key={v.id} style={{
-                  fontSize: 11, fontWeight: 500, borderRadius: 20, padding: "3px 10px",
-                  border: `1px solid ${v.zerado ? "#E8B8B8" : "#C2D9C9"}`,
-                  background: v.zerado ? "#FAF0F0" : "#EDF4EF",
-                  color: v.zerado ? "#6B2020" : "#2D5A3D",
-                  whiteSpace: "nowrap"
-                }}>
-                  {v.nome}
-                  {v.zerado ? " ✕" : ` · ${v.stock}`}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function EstoqueTab() {
-      const [dados, setDados] = React.useState(null);
-      const [loading, setLoading] = React.useState(true);
-
-      React.useEffect(() => {
-        fetch("/api/estoque-status")
-          .then(r => r.json())
-          .then(d => { setDados(d); setLoading(false); })
-          .catch(() => setLoading(false));
-      }, []);
-
-      if (loading) return (
-        <div style={{ display: "flex", justifyContent: "center", padding: 60, color: "#B0A898", fontFamily: "'DM Sans', sans-serif" }}>
-          Carregando estoque...
-        </div>
-      );
-      if (!dados) return (
-        <div style={{ padding: 40, color: "#C45A5A", fontFamily: "'DM Sans', sans-serif" }}>Erro ao carregar dados.</div>
-      );
-
-      return (
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ fontSize: 10, color: "#B0A898", letterSpacing: 1, fontWeight: 500 }}>PRODUTOS COM ESTOQUE ZERADO</div>
-            <span style={{
-              fontSize: 10, fontWeight: 600, color: "#6B2020", background: "#F5DADA",
-              border: "1px solid #E8B8B8", borderRadius: 20, padding: "2px 10px"
-            }}>{dados.total}</span>
-          </div>
-          {dados.total === 0 ? (
-            <div style={{ textAlign: "center", padding: 60, color: "#B0A898", fontSize: 14 }}>
-              Nenhum produto com estoque zerado no momento.
-            </div>
-          ) : (
-            dados.produtos.map(p => <EstoqueProdutoCard key={p.id} produto={p} />)
-          )}
-        </div>
-      );
-    }
-
-    function RadarPerformance() {
-      const [search, setSearch] = useState("");
-      const [products, setProducts] = React.useState([]);
-      const [tamanhoMap, setTamanhoMap] = React.useState({});
-      const [medias, setMedias] = React.useState({ mediaCTR: 0, mediaConv: 0, mediaAddRate: 0, mediaImpressoes: 0 });
-      const [loading, setLoading] = React.useState(true);
-      const [autenticado, setAutenticado] = React.useState(false);
-      const [aba, setAba] = React.useState("radar");
-
-      React.useEffect(() => {
-        if (!autenticado) return;
-        Promise.all([
-          fetch("/api/products").then(res => res.json()),
-          fetch("/api/product-images").then(res => res.json()).catch(() => ({ imageMap: {} })),
-          fetch("/api/tamanhos").then(res => res.json()).catch(() => ({ tamanhoMap: {} })),
-        ]).then(([data, imgData, tamData]) => {
-          const imageMap = imgData.imageMap || {};
-          const saleSet = new Set(imgData.saleNames || []);
-          setTamanhoMap(tamData.tamanhoMap || {});
-
-          const mapped = data.products.filter(p => !saleSet.has(p.produto?.toLowerCase().trim())).map(p => {
-            const nomeKey = p.produto?.toLowerCase().trim();
-            const img = imageMap[nomeKey] || null;
-            return { ...p, name: p.produto, img };
-          });
-          AVG_CTR = mapped.length > 0
-            ? mapped.reduce((s, p) => s + (p.ctr || 0), 0) / mapped.length
-            : 0;
-          const mediasCalc = {
-            mediaCTR: AVG_CTR,
-            mediaConv: mapped.length > 0 ? mapped.reduce((s, p) => s + (p.conversion_rate || 0), 0) / mapped.length : 0,
-            mediaAddRate: mapped.length > 0 ? mapped.reduce((s, p) => s + (p.add_rate || 0), 0) / mapped.length : 0,
-            mediaImpressoes: mapped.length > 0 ? mapped.reduce((s, p) => s + (p.impressoes || 0), 0) / mapped.length : 0,
-          };
-          setMedias(mediasCalc);
-          const withStatus = mapped.map(p => ({
-            ...p,
-            status: normalizeStatus(p.status_inteligente) || classify(p)
-          }));
-          const sorted = withStatus.sort((a, b) => {
-            const orderA = ORDER.indexOf(a.status);
-            const orderB = ORDER.indexOf(b.status);
-            if (orderA !== orderB) return orderA - orderB;
-            const scoreA = a.score_ordem != null ? a.score_ordem : calcScore(a);
-            const scoreB = b.score_ordem != null ? b.score_ordem : calcScore(b);
-            return scoreB - scoreA;
-          });
-          setProducts(sorted);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-      }, [autenticado]);
-
-      if (!autenticado) return <LoginScreen onLogin={() => setAutenticado(true)} />;
-
-      if (loading) return (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "'DM Sans', sans-serif", color: "#B0A898" }}>
-          Carregando...
-        </div>
-      );
-
-      const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-      const grouped = {};
-      ORDER.forEach(k => { grouped[k] = filtered.filter(p => p.status === k); });
-
-      const totalVendas = products.reduce((a, p) => a + (p.compras || 0), 0);
-      const totalImpressoes = products.reduce((a, p) => a + (p.impressoes || 0), 0);
-      const estrelas = products.filter(p => p.status === "estrela").length;
-      const problemas = products.filter(p => p.status === "problema" || p.status === "invisivel").length;
-
-      return (
-        <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#F7F6F3", minHeight: "100vh", color: "#1a1a1a" }}>
-          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; }`}</style>
-
-          <div style={{ background: "#fff", borderBottom: "1px solid #ECEAE6", padding: "0 40px" }}>
-            <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 58 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, color: "#1a1a1a" }}>IT LOOK</span>
-                <span style={{ width: 1, height: 14, background: "#E0DDD8" }} />
-                <span style={{ fontSize: 11, color: "#B0A898", letterSpacing: 1.5, fontWeight: 500 }}>RADAR DE PERFORMANCE</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {["radar", "estoque"].map(tab => (
-                    <button key={tab} onClick={() => setAba(tab)} style={{
-                      fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600,
-                      letterSpacing: 1, padding: "6px 16px", borderRadius: 20, cursor: "pointer",
-                      border: `1.5px solid ${aba === tab ? "#1a1a1a" : "#E0DDD8"}`,
-                      background: aba === tab ? "#1a1a1a" : "transparent",
-                      color: aba === tab ? "#fff" : "#B0A898",
-                      textTransform: "uppercase", transition: "all 0.15s"
-                    }}>{tab === "radar" ? "Radar" : "Estoque"}</button>
-                  ))}
-                </div>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#C9A84C", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 600 }}>D</div>
-              </div>
-            </div>
-          </div>
-
-          {aba === "estoque" ? <EstoqueTab /> : <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 40px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
-              {[
-                { label: "Vendas Totais",     value: totalVendas,          sub: "últimos 30 dias",      color: STATUS.estrela.text },
-                { label: "Impressões",        value: fmt(totalImpressoes), sub: "alcance total",        color: "#374151" },
-                { label: "Produtos Estrela",  value: estrelas,             sub: "CTR alto + vendas",    color: STATUS.estrela.dot },
-                { label: "Precisam Atenção",  value: problemas,            sub: "problema + invisível", color: STATUS.problema.dot },
-              ].map(({ label, value, sub, color }) => (
-                <div key={label} style={{ background: "#fff", border: "1.5px solid #ECEAE6", borderRadius: 10, padding: "16px 18px" }}>
-                  <div style={{ fontSize: 10, color: "#B0A898", letterSpacing: 1, marginBottom: 8, fontWeight: 500 }}>{label.toUpperCase()}</div>
-                  <div style={{ fontSize: 30, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-                  <div style={{ fontSize: 11, color: "#B0A898", marginTop: 5 }}>{sub}</div>
-                </div>
-              ))}
-            </div>
-
-            <input
-              placeholder="Buscar produto..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, border: "1.5px solid #E0DDD8", borderRadius: 8, padding: "9px 14px", width: 250, background: "#fff", color: "#1a1a1a", outline: "none", marginBottom: 24 }}
-            />
-
-            {ORDER.map(k => (
-              <GroupSection key={k} statusKey={k} products={grouped[k]} tamanhoMap={tamanhoMap} medias={medias} />
-            ))}
-          </div>}
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<RadarPerformance />);
-  </script>
+  // ── Start ──────────────────────────────────────────────────────
+  loadData();
+</script>
 </body>
 </html>
