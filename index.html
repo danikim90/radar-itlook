@@ -33,7 +33,7 @@
 
     .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-    select, input[type="text"] {
+    select, input[type="text"], input[type="date"] {
       border: 1px solid #e0e0de;
       border-radius: 7px;
       padding: 6px 10px;
@@ -43,7 +43,36 @@
       outline: none;
       cursor: pointer;
     }
-    select:focus, input[type="text"]:focus { border-color: #aaa; }
+    select:focus, input[type="text"]:focus, input[type="date"]:focus { border-color: #aaa; }
+
+    /* período rápido */
+    .period-btns { display: flex; gap: 3px; align-items: center; }
+    .period-btn {
+      border: 1px solid #e0e0de;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #fff;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .period-btn:hover { background: #f5f5f3; }
+    .period-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+    /* picker customizado */
+    .custom-period {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .custom-period.visible { display: flex; }
+    .custom-sep { font-size: 11px; color: #aaa; }
+
+    /* toggle agrupamento ativo */
+    .btn.toggled { background: #e8f0fe; color: #1a56db; border-color: #a8c0f8; }
 
     .btn {
       border: 1px solid #e0e0de;
@@ -245,12 +274,20 @@
 <div class="header">
   <div class="logo">IT Look <span>Radar de Performance</span></div>
   <div class="controls">
-    <select id="sel-periodo" onchange="onPeriodoChange()">
-      <option value="7">Últimos 7 dias</option>
-      <option value="30" selected>Últimos 30 dias</option>
-      <option value="60">Últimos 60 dias</option>
-      <option value="90">Últimos 90 dias</option>
-    </select>
+    <div class="period-btns">
+      <button class="period-btn" data-dias="7"  onclick="selectPeriod(this)">7d</button>
+      <button class="period-btn" data-dias="15" onclick="selectPeriod(this)">15d</button>
+      <button class="period-btn active" data-dias="30" onclick="selectPeriod(this)">30d</button>
+      <button class="period-btn" data-dias="60" onclick="selectPeriod(this)">60d</button>
+      <button class="period-btn" data-dias="90" onclick="selectPeriod(this)">90d</button>
+      <button class="period-btn" id="btn-custom" onclick="selectPeriod(this)">Personalizado</button>
+    </div>
+    <div class="custom-period" id="custom-period">
+      <input type="date" id="dt-de">
+      <span class="custom-sep">até</span>
+      <input type="date" id="dt-ate">
+      <button class="btn primary" onclick="applyCustomPeriod()">Aplicar</button>
+    </div>
     <select id="sel-categoria" onchange="applyFilters()">
       <option value="">Todas as categorias</option>
     </select>
@@ -260,6 +297,7 @@
       <option value="baixo">Estoque baixo (≤20)</option>
       <option value="ok">Estoque ok</option>
     </select>
+    <button class="btn" id="btn-group" onclick="toggleGroupBy()">Agrupar por cat.</button>
     <button class="btn" onclick="exportCSV()">↓ CSV</button>
     <button class="btn primary" onclick="loadData()">↺ Atualizar</button>
   </div>
@@ -348,23 +386,59 @@
 
 <script>
   // ── Estado global ──────────────────────────────────────────────
-  let rawData = [];          // produtos do BigQuery
-  let estoqueMap = {};       // { nomeProduto: qtd }
-  let categoriaMap = {};     // { nomeProduto: categoria }
-  let imageMap = {};         // { nomeProduto: url }
+  let rawData = [];
+  let estoqueMap = {};
+  let categoriaMap = {};
+  let imageMap = {};
   let filteredData = [];
   let collapsedCats = {};
   let sortKey = 'impressoes';
   let sortDir = -1;
+  let groupByCategory = false;
+  let customPeriod = null; // { de, ate } ou null
+
+  // ── Período ────────────────────────────────────────────────────
+  function selectPeriod(btn) {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const picker = document.getElementById('custom-period');
+    if (btn.id === 'btn-custom') {
+      picker.classList.add('visible');
+      return; // aguarda o clique em "Aplicar"
+    }
+    picker.classList.remove('visible');
+    customPeriod = null;
+    loadData();
+  }
+
+  function applyCustomPeriod() {
+    const de  = document.getElementById('dt-de').value;
+    const ate = document.getElementById('dt-ate').value;
+    if (!de || !ate) { alert('Selecione as duas datas.'); return; }
+    if (de > ate)    { alert('A data inicial deve ser anterior à data final.'); return; }
+    customPeriod = { de, ate };
+    loadData();
+  }
+
+  function toggleGroupBy() {
+    groupByCategory = !groupByCategory;
+    document.getElementById('btn-group').classList.toggle('toggled', groupByCategory);
+    renderTable();
+  }
+
+  function getPeriodParam() {
+    if (customPeriod) return `de=${customPeriod.de}&ate=${customPeriod.ate}`;
+    const active = document.querySelector('.period-btn.active:not(#btn-custom)');
+    return `dias=${active ? active.dataset.dias : '30'}`;
+  }
 
   // ── Inicialização ──────────────────────────────────────────────
   async function loadData() {
     setLoading(true);
-    const dias = document.getElementById('sel-periodo').value;
 
     try {
       const [prodRes, estoqueRes, imgRes] = await Promise.all([
-        fetch(`/api/products?dias=${dias}`),
+        fetch(`/api/products?${getPeriodParam()}`),
         fetch('/api/estoque'),
         fetch('/api/product-images'),
       ]);
@@ -392,14 +466,12 @@
         return;
       }
 
-      populateCategoriaSelect();
+      populateCategoriaSelect(estoqueJson.allCategories || []);
       applyFilters();
     } catch (e) {
       showError('Erro ao carregar dados: ' + e.message);
     }
   }
-
-  function onPeriodoChange() { loadData(); }
 
   // ── Filtros e ordenação ────────────────────────────────────────
   function applyFilters() {
@@ -417,8 +489,8 @@
 
     filteredData = rawData.filter(p => {
       const nome = (p.produto || '').toLowerCase();
-      const cat  = (categoriaMap[nome] || 'Sem categoria');
-      const est  = estoqueMap[nome] ?? null;
+      const cat  = getCat(nome);
+      const est  = getEst(nome);
 
       if (fProd && !nome.includes(fProd)) return false;
       if (fCat  && cat !== fCat) return false;
@@ -440,10 +512,10 @@
 
     filteredData.sort((a, b) => {
       let va = sortKey === 'produto'  ? (a.produto || '') :
-               sortKey === 'estoque'  ? (estoqueMap[(a.produto||'').toLowerCase()] ?? -1) :
+               sortKey === 'estoque'  ? (getEst((a.produto||'').toLowerCase()) ?? -1) :
                parseFloat(a[sortKey]) || 0;
       let vb = sortKey === 'produto'  ? (b.produto || '') :
-               sortKey === 'estoque'  ? (estoqueMap[(b.produto||'').toLowerCase()] ?? -1) :
+               sortKey === 'estoque'  ? (getEst((b.produto||'').toLowerCase()) ?? -1) :
                parseFloat(b[sortKey]) || 0;
       if (va < vb) return sortDir;
       if (va > vb) return -sortDir;
@@ -469,19 +541,20 @@
       return;
     }
 
-    // Agrupar por categoria
+    if (!groupByCategory) {
+      tbody.innerHTML = filteredData.map(p => buildRow(p)).join('');
+      return;
+    }
+
     const groups = {};
     filteredData.forEach(p => {
-      const nome = (p.produto || '').toLowerCase();
-      const cat  = categoriaMap[nome] || 'Sem categoria';
+      const cat = getCat((p.produto || '').toLowerCase());
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(p);
     });
 
-    const cats = Object.keys(groups).sort();
     let html = '';
-
-    cats.forEach(cat => {
+    Object.keys(groups).sort().forEach(cat => {
       const rows  = groups[cat];
       const isCol = collapsedCats[cat];
       html += `
@@ -491,10 +564,7 @@
             <span class="cat-count">${rows.length} produto${rows.length > 1 ? 's' : ''}</span>
           </td>
         </tr>`;
-
-      if (!isCol) {
-        rows.forEach(p => { html += buildRow(p); });
-      }
+      if (!isCol) rows.forEach(p => { html += buildRow(p); });
     });
 
     tbody.innerHTML = html;
@@ -502,8 +572,8 @@
 
   function buildRow(p) {
     const nome     = (p.produto || '').toLowerCase();
-    const imgUrl   = imageMap[nome] || null;
-    const estoque  = estoqueMap[nome] ?? null;
+    const imgUrl   = getImg(nome);
+    const estoque  = getEst(nome);
     const ctr      = pct(p.ctr);
     const ctrs     = pct(p.ctr_sessao);
     const vpm      = pct(p.vpm);
@@ -518,11 +588,13 @@
       ? `<img class="prod-img" src="${imgUrl}" alt="" loading="lazy">`
       : `<div class="prod-img-placeholder"></div>`;
 
+    const nomeDisplay = (p.produto || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+
     return `<tr>
       <td>
         <div class="cell-produto">
           ${imgHtml}
-          <span class="prod-nome" title="${p.produto}">${p.produto}</span>
+          <span class="prod-nome" title="${p.produto}">${nomeDisplay}</span>
         </div>
       </td>
       <td>
@@ -565,8 +637,10 @@
   }
 
   // ── Categorias no select ───────────────────────────────────────
-  function populateCategoriaSelect() {
-    const cats = [...new Set(Object.values(categoriaMap))].sort();
+  function populateCategoriaSelect(allCategories) {
+    // Usa a lista completa do endpoint /categories; complementa com o que vier do categoriaMap
+    const fromMap = Object.values(categoriaMap).filter(c => c && c !== 'Sem categoria');
+    const cats = [...new Set([...allCategories, ...fromMap])].sort();
     const sel  = document.getElementById('sel-categoria');
     sel.innerHTML = '<option value="">Todas as categorias</option>';
     cats.forEach(c => {
@@ -580,9 +654,9 @@
     const rows = filteredData.map(p => {
       const nome = (p.produto || '').toLowerCase();
       return [
-        categoriaMap[nome] || 'Sem categoria',
+        getCat(nome),
         p.produto,
-        estoqueMap[nome] ?? '',
+        getEst(nome) ?? '',
         pct(p.ctr).toFixed(2),
         pct(p.ctr_sessao).toFixed(2),
         pct(p.vpm).toFixed(2),
@@ -595,11 +669,21 @@
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const a   = document.createElement('a');
     a.href    = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
-    a.download = `radar-itlook-${document.getElementById('sel-periodo').value}d.csv`;
+    const suffix = customPeriod
+      ? `${customPeriod.de}_${customPeriod.ate}`
+      : (document.querySelector('.period-btn.active:not(#btn-custom)')?.dataset.dias || '30') + 'd';
+    a.download = `radar-itlook-${suffix}.csv`;
     a.click();
   }
 
   // ── Utilitários ────────────────────────────────────────────────
+  // GA4 envia nomes como "Produto (Cor, Tam)" — Nuvemshop retorna "Produto"
+  // Tenta lookup com nome completo e depois sem o sufixo entre parênteses
+  function normNome(nome) { return nome.replace(/\s*\([^)]*\)\s*$/, '').trim(); }
+  function getEst(nome)  { return estoqueMap[nome]   ?? estoqueMap[normNome(nome)]   ?? null; }
+  function getCat(nome)  { return categoriaMap[nome] || categoriaMap[normNome(nome)] || 'Sem categoria'; }
+  function getImg(nome)  { return imageMap[nome]     || imageMap[normNome(nome)]     || null; }
+
   function pct(v)  { return parseFloat(v) || 0; }
   function v(id)   { return document.getElementById(id)?.value?.trim() || ''; }
   function num(id) { const n = parseFloat(v(id)); return isNaN(n) ? null : n; }
