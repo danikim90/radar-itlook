@@ -396,6 +396,7 @@
   let sortDir = -1;
   let groupByCategory = false;
   let customPeriod = null; // { de, ate } ou null
+  let categoriasMap = {}; // todas as categorias por produto (para filtro)
 
   // ── Período ────────────────────────────────────────────────────
   function selectPeriod(btn) {
@@ -456,10 +457,11 @@
         return;
       }
 
-      rawData      = prodJson.products || [];
-      estoqueMap   = estoqueJson.estoqueMap || {};
-      categoriaMap = estoqueJson.categoriaMap || {};
-      imageMap     = imgJson.imageMap || {};
+      rawData       = prodJson.products || [];
+      estoqueMap    = estoqueJson.estoqueMap || {};
+      categoriaMap  = estoqueJson.categoriaMap || {};
+      categoriasMap = estoqueJson.categoriasMap || {};
+      imageMap      = imgJson.imageMap || {};
 
       if (rawData.length === 0) {
         showError('A API retornou 0 produtos. Verifique se a view vw_radar_completo foi criada no BigQuery.');
@@ -493,7 +495,7 @@
       const est  = getEst(nome);
 
       if (fProd && !nome.includes(fProd)) return false;
-      if (fCat  && cat !== fCat) return false;
+      if (fCat  && !getCats(nome).includes(fCat)) return false;
       if (fEst  !== null && est !== null && est < fEst) return false;
       if (fCtr  !== null && pct(p.ctr) < fCtr) return false;
       if (fCtrs !== null && pct(p.ctr_sessao) < fCtrs) return false;
@@ -680,9 +682,10 @@
   // GA4 envia nomes como "Produto (Cor, Tam)" — Nuvemshop retorna "Produto"
   // Tenta lookup com nome completo e depois sem o sufixo entre parênteses
   function normNome(nome) { return nome.replace(/\s*\([^)]*\)\s*$/, '').trim(); }
-  function getEst(nome)  { return estoqueMap[nome]   ?? estoqueMap[normNome(nome)]   ?? null; }
-  function getCat(nome)  { return categoriaMap[nome] || categoriaMap[normNome(nome)] || 'Sem categoria'; }
-  function getImg(nome)  { return imageMap[nome]     || imageMap[normNome(nome)]     || null; }
+  function getEst(nome)  { return estoqueMap[nome]    ?? estoqueMap[normNome(nome)]    ?? null; }
+  function getCat(nome)  { return categoriaMap[nome]  || categoriaMap[normNome(nome)]  || 'Sem categoria'; }
+  function getCats(nome) { return categoriasMap[nome] || categoriasMap[normNome(nome)] || []; }
+  function getImg(nome)  { return imageMap[nome]      || imageMap[normNome(nome)]      || null; }
 
   function pct(v)  { return parseFloat(v) || 0; }
   function v(id)   { return document.getElementById(id)?.value?.trim() || ''; }
