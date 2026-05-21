@@ -124,7 +124,7 @@
     /* ---------- FILTER ROW ---------- */
     .filter-bar {
       display: grid;
-      grid-template-columns: 2fr 70px 70px 80px 70px 90px 70px 80px 90px;
+      grid-template-columns: 2fr 65px 70px 55px 65px 65px 78px 65px 88px 65px 75px 85px;
       gap: 6px;
       padding: 8px 12px;
       border-bottom: 1px solid #f0f0ee;
@@ -167,16 +167,18 @@
     thead th.active .sort-icon { opacity: 1; }
 
     /* column widths */
-    col.c-produto   { width: auto; }
-    col.c-img       { width: 40px; }
-    col.c-estoque   { width: 80px; }
-    col.c-ctr       { width: 72px; }
-    col.c-ctrs      { width: 86px; }
-    col.c-vpm       { width: 72px; }
-    col.c-imp       { width: 96px; }
-    col.c-cliques   { width: 72px; }
-    col.c-add       { width: 72px; }
-    col.c-conv      { width: 80px; }
+    col.c-produto  { width: auto; }
+    col.c-score    { width: 85px; }
+    col.c-estoque  { width: 80px; }
+    col.c-dias     { width: 80px; }
+    col.c-vendas   { width: 78px; }
+    col.c-ctr      { width: 70px; }
+    col.c-ctrs     { width: 84px; }
+    col.c-vpm      { width: 70px; }
+    col.c-imp      { width: 94px; }
+    col.c-cliques  { width: 70px; }
+    col.c-add      { width: 72px; }
+    col.c-conv     { width: 78px; }
 
     tbody tr { border-bottom: 1px solid #f0f0ee; transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
@@ -216,6 +218,12 @@
     .fill-ok   { background: #1a7a4a; }
     .fill-mid  { background: #d4860a; }
     .fill-low  { background: #c0392b; }
+
+    /* score */
+    .score-high { font-weight: 600; color: #1a7a4a; }
+    .score-mid  { font-weight: 600; color: #d4860a; }
+    .score-low  { font-weight: 600; color: #c0392b; }
+    .score-muted { font-size: 11px; color: #aaa; }
 
     /* badges status */
     .badge {
@@ -341,21 +349,27 @@
 
     <!-- filter bar -->
     <div class="filter-bar">
-      <input type="text" id="f-produto"   placeholder="🔍 Produto..."     oninput="applyFilters()">
-      <input type="text" id="f-estoque"   placeholder="Estoque ≥"         oninput="applyFilters()">
-      <input type="text" id="f-ctr"       placeholder="CTR ≥"             oninput="applyFilters()">
-      <input type="text" id="f-ctrs"      placeholder="CTR/Ses ≥"         oninput="applyFilters()">
-      <input type="text" id="f-vpm"       placeholder="VPM ≥"             oninput="applyFilters()">
-      <input type="text" id="f-imp"       placeholder="Imp. ≥"            oninput="applyFilters()">
-      <input type="text" id="f-cliques"   placeholder="Cliques ≥"         oninput="applyFilters()">
-      <input type="text" id="f-add"       placeholder="Add% ≥"            oninput="applyFilters()">
-      <input type="text" id="f-conv"      placeholder="Conv% ≥"           oninput="applyFilters()">
+      <input type="text" id="f-produto"   placeholder="🔍 Produto..."  oninput="applyFilters()">
+      <input type="text" id="f-score"     placeholder="Score ≥"        oninput="applyFilters()">
+      <input type="text" id="f-estoque"   placeholder="Estoque ≥"      oninput="applyFilters()">
+      <div></div><!-- placeholder Dias Ativo -->
+      <input type="text" id="f-vendas"    placeholder="Vendas ≥"       oninput="applyFilters()">
+      <input type="text" id="f-ctr"       placeholder="CTR ≥"          oninput="applyFilters()">
+      <input type="text" id="f-ctrs"      placeholder="CTR/Ses ≥"      oninput="applyFilters()">
+      <input type="text" id="f-vpm"       placeholder="VPM ≥"          oninput="applyFilters()">
+      <input type="text" id="f-imp"       placeholder="Imp. ≥"         oninput="applyFilters()">
+      <input type="text" id="f-cliques"   placeholder="Cliques ≥"      oninput="applyFilters()">
+      <input type="text" id="f-add"       placeholder="Add% ≥"         oninput="applyFilters()">
+      <input type="text" id="f-conv"      placeholder="Conv% ≥"        oninput="applyFilters()">
     </div>
 
     <table>
       <colgroup>
         <col class="c-produto">
+        <col class="c-score">
         <col class="c-estoque">
+        <col class="c-dias">
+        <col class="c-vendas">
         <col class="c-ctr">
         <col class="c-ctrs">
         <col class="c-vpm">
@@ -367,8 +381,11 @@
       <thead>
         <tr>
           <th onclick="sortBy('produto')">Produto <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('score')" class="active">Score <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('estoque')">Estoque <span class="sort-icon">↕</span></th>
-          <th onclick="sortBy('ctr')" class="active">CTR% <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('diasAtivo')">Dias Ativo <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('vendas')">Vendas <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('ctr')">CTR% <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('ctr_sessao')">CTR/Ses <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('vpm')">VPM <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('impressoes')">Impressões <span class="sort-icon">↕</span></th>
@@ -378,7 +395,7 @@
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr class="state-row"><td colspan="9"><span class="spinner"></span> Carregando dados...</td></tr>
+        <tr class="state-row"><td colspan="12"><span class="spinner"></span> Carregando dados...</td></tr>
       </tbody>
     </table>
   </div>
@@ -386,17 +403,18 @@
 
 <script>
   // ── Estado global ──────────────────────────────────────────────
-  let rawData = [];
-  let estoqueMap = {};
+  let rawData      = [];
+  let estoqueMap   = {};
   let categoriaMap = {};
-  let imageMap = {};
+  let imageMap     = {};
+  let diasAtivoMap = {};
   let filteredData = [];
   let collapsedCats = {};
-  let sortKey = 'impressoes';
-  let sortDir = -1;
+  let sortKey  = 'score';
+  let sortDir  = -1;
   let groupByCategory = false;
-  let customPeriod = null; // { de, ate } ou null
-  let categoriasMap = {}; // todas as categorias por produto (para filtro)
+  let customPeriod    = null;
+  let categoriasMap   = {};
 
   // ── Período ────────────────────────────────────────────────────
   function selectPeriod(btn) {
@@ -405,7 +423,7 @@
     const picker = document.getElementById('custom-period');
     if (btn.id === 'btn-custom') {
       picker.classList.add('visible');
-      return; // aguarda o clique em "Aplicar"
+      return;
     }
     picker.classList.remove('visible');
     customPeriod = null;
@@ -458,10 +476,11 @@
       }
 
       rawData       = prodJson.products || [];
-      estoqueMap    = estoqueJson.estoqueMap || {};
-      categoriaMap  = estoqueJson.categoriaMap || {};
+      estoqueMap    = estoqueJson.estoqueMap    || {};
+      categoriaMap  = estoqueJson.categoriaMap  || {};
       categoriasMap = estoqueJson.categoriasMap || {};
-      imageMap      = imgJson.imageMap || {};
+      diasAtivoMap  = estoqueJson.diasAtivoMap  || {};
+      imageMap      = imgJson.imageMap          || {};
 
       if (rawData.length === 0) {
         showError('A API retornou 0 produtos. Verifique se a view vw_radar_completo foi criada no BigQuery.');
@@ -475,35 +494,83 @@
     }
   }
 
-  // ── Filtros e ordenação ────────────────────────────────────────
-  function applyFilters() {
-    const fProd  = v('f-produto').toLowerCase();
-    const fEst   = num('f-estoque');
-    const fCtr   = num('f-ctr');
-    const fCtrs  = num('f-ctrs');
-    const fVpm   = num('f-vpm');
-    const fImp   = num('f-imp');
-    const fCli   = num('f-cliques');
-    const fAdd   = num('f-add');
-    const fConv  = num('f-conv');
-    const fCat   = v('sel-categoria');
-    const fSt    = v('sel-status');
+  // ── Score ──────────────────────────────────────────────────────
+  function computeScores(data) {
+    const metrics = ['compras', 'vpm', 'conversion_rate', 'ctr', 'add_rate'];
+    const weights = [0.35, 0.25, 0.20, 0.10, 0.10];
 
-    filteredData = rawData.filter(p => {
+    // Apenas produtos que podem ter score participam da normalização
+    const scorable = data.filter(p => {
+      const imp  = parseInt(p.impressoes) || 0;
+      const dias = getDiasAtivo((p.produto || '').toLowerCase());
+      return imp >= 100 && (dias === null || dias >= 7);
+    });
+
+    if (!scorable.length) {
+      data.forEach(p => { p.score = null; p.scoreTag = 'small'; });
+      return;
+    }
+
+    const mins = {}, maxs = {};
+    metrics.forEach(m => {
+      const vals = scorable.map(p => pct(p[m]));
+      mins[m] = Math.min(...vals);
+      maxs[m] = Math.max(...vals);
+    });
+
+    data.forEach(p => {
       const nome = (p.produto || '').toLowerCase();
-      const cat  = getCat(nome);
+      const imp  = parseInt(p.impressoes) || 0;
+      const dias = getDiasAtivo(nome);
       const est  = getEst(nome);
 
-      if (fProd && !nome.includes(fProd)) return false;
-      if (fCat  && !getCats(nome).includes(fCat)) return false;
-      if (fEst  !== null && est !== null && est < fEst) return false;
-      if (fCtr  !== null && pct(p.ctr) < fCtr) return false;
-      if (fCtrs !== null && pct(p.ctr_sessao) < fCtrs) return false;
-      if (fVpm  !== null && pct(p.vpm) < fVpm) return false;
-      if (fImp  !== null && p.impressoes < fImp) return false;
-      if (fCli  !== null && p.cliques < fCli) return false;
-      if (fAdd  !== null && pct(p.add_rate) < fAdd) return false;
-      if (fConv !== null && pct(p.conversion_rate) < fConv) return false;
+      if (imp < 100)                          { p.score = null; p.scoreTag = 'small'; return; }
+      if (dias !== null && dias < 7)          { p.score = null; p.scoreTag = 'new';   return; }
+
+      let score = 0;
+      metrics.forEach((m, i) => {
+        const val   = pct(p[m]);
+        const range = maxs[m] - mins[m];
+        const norm  = range > 0 ? (val - mins[m]) / range : 0;
+        score += norm * weights[i];
+      });
+
+      p.score    = Math.round(score * 100);
+      p.scoreTag = (est !== null && est <= 5) ? 'low_stock' : 'ok';
+    });
+  }
+
+  // ── Filtros e ordenação ────────────────────────────────────────
+  function applyFilters() {
+    const fProd   = v('f-produto').toLowerCase();
+    const fScore  = num('f-score');
+    const fEst    = num('f-estoque');
+    const fVendas = num('f-vendas');
+    const fCtr    = num('f-ctr');
+    const fCtrs   = num('f-ctrs');
+    const fVpm    = num('f-vpm');
+    const fImp    = num('f-imp');
+    const fCli    = num('f-cliques');
+    const fAdd    = num('f-add');
+    const fConv   = num('f-conv');
+    const fCat    = v('sel-categoria');
+    const fSt     = v('sel-status');
+
+    let data = rawData.filter(p => {
+      const nome = (p.produto || '').toLowerCase();
+      const est  = getEst(nome);
+
+      if (fProd   && !nome.includes(fProd)) return false;
+      if (fCat    && !getCats(nome).includes(fCat)) return false;
+      if (fEst    !== null && est !== null && est < fEst) return false;
+      if (fCtr    !== null && pct(p.ctr) < fCtr) return false;
+      if (fCtrs   !== null && pct(p.ctr_sessao) < fCtrs) return false;
+      if (fVpm    !== null && pct(p.vpm) < fVpm) return false;
+      if (fImp    !== null && p.impressoes < fImp) return false;
+      if (fCli    !== null && p.cliques < fCli) return false;
+      if (fAdd    !== null && pct(p.add_rate) < fAdd) return false;
+      if (fConv   !== null && pct(p.conversion_rate) < fConv) return false;
+      if (fVendas !== null && (parseInt(p.compras) || 0) < fVendas) return false;
 
       if (fSt === 'critico' && (est === null || est > 5)) return false;
       if (fSt === 'baixo'   && (est === null || est > 20 || est <= 5)) return false;
@@ -512,13 +579,35 @@
       return true;
     });
 
+    // Calcula scores nos produtos filtrados (normalização relativa ao conjunto visível)
+    computeScores(data);
+
+    // Aplica filtro de score após cálculo
+    if (fScore !== null) {
+      data = data.filter(p => p.score !== null && p.score >= fScore);
+    }
+
+    filteredData = data;
+
     filteredData.sort((a, b) => {
-      let va = sortKey === 'produto'  ? (a.produto || '') :
-               sortKey === 'estoque'  ? (getEst((a.produto||'').toLowerCase()) ?? -1) :
-               parseFloat(a[sortKey]) || 0;
-      let vb = sortKey === 'produto'  ? (b.produto || '') :
-               sortKey === 'estoque'  ? (getEst((b.produto||'').toLowerCase()) ?? -1) :
-               parseFloat(b[sortKey]) || 0;
+      let va, vb;
+      const nA = (a.produto || '').toLowerCase();
+      const nB = (b.produto || '').toLowerCase();
+
+      if (sortKey === 'produto') {
+        va = a.produto || ''; vb = b.produto || '';
+      } else if (sortKey === 'estoque') {
+        va = getEst(nA) ?? -1; vb = getEst(nB) ?? -1;
+      } else if (sortKey === 'score') {
+        va = a.score ?? -1; vb = b.score ?? -1;
+      } else if (sortKey === 'diasAtivo') {
+        va = getDiasAtivo(nA) ?? 9999; vb = getDiasAtivo(nB) ?? 9999;
+      } else if (sortKey === 'vendas') {
+        va = parseInt(a.compras) || 0; vb = parseInt(b.compras) || 0;
+      } else {
+        va = parseFloat(a[sortKey]) || 0; vb = parseFloat(b[sortKey]) || 0;
+      }
+
       if (va < vb) return sortDir;
       if (va > vb) return -sortDir;
       return 0;
@@ -539,7 +628,7 @@
   function renderTable() {
     const tbody = document.getElementById('tbody');
     if (!filteredData.length) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="9">Nenhum produto encontrado</td></tr>`;
+      tbody.innerHTML = `<tr class="state-row"><td colspan="12">Nenhum produto encontrado</td></tr>`;
       return;
     }
 
@@ -561,7 +650,7 @@
       const isCol = collapsedCats[cat];
       html += `
         <tr class="cat-header ${isCol ? 'cat-collapsed' : ''}" onclick="toggleCat('${cat.replace(/'/g,"\\'")}')">
-          <td colspan="9">
+          <td colspan="12">
             <span class="cat-chevron">▾</span>${cat}
             <span class="cat-count">${rows.length} produto${rows.length > 1 ? 's' : ''}</span>
           </td>
@@ -573,20 +662,47 @@
   }
 
   function buildRow(p) {
-    const nome     = (p.produto || '').toLowerCase();
-    const imgUrl   = getImg(nome);
-    const estoque  = getEst(nome);
-    const ctr      = pct(p.ctr);
-    const ctrs     = pct(p.ctr_sessao);
-    const vpm      = pct(p.vpm);
-    const add      = pct(p.add_rate);
-    const conv     = pct(p.conversion_rate);
+    const nome    = (p.produto || '').toLowerCase();
+    const imgUrl  = getImg(nome);
+    const estoque = getEst(nome);
+    const dias    = getDiasAtivo(nome);
+    const ctr     = pct(p.ctr);
+    const ctrs    = pct(p.ctr_sessao);
+    const vpm     = pct(p.vpm);
+    const add     = pct(p.add_rate);
+    const conv    = pct(p.conversion_rate);
+    const vendas  = parseInt(p.compras) || 0;
 
+    // Estoque
     const estClass = estoque === null ? '' : estoque <= 5 ? 'fill-low' : estoque <= 20 ? 'fill-mid' : 'fill-ok';
     const estPct   = estoque === null ? 0 : Math.min(100, Math.round(estoque / 100 * 100));
-    const estText  = estoque === null ? '—' : estoque;
+    const estBadge = (estoque !== null && estoque <= 5) ? '🔴 ' : '';
+    const estText  = estoque === null ? '—' : estBadge + estoque;
 
-    const imgHtml  = imgUrl
+    // Score
+    let scoreHtml;
+    if (p.scoreTag === 'small') {
+      scoreHtml = `<span class="score-muted">⚫ Amostra pequena</span>`;
+    } else if (p.scoreTag === 'new') {
+      scoreHtml = `<span class="score-muted">🟡 Em análise</span>`;
+    } else {
+      const sc      = p.score ?? 0;
+      const cls     = sc >= 70 ? 'score-high' : sc >= 40 ? 'score-mid' : 'score-low';
+      const lsBadge = p.scoreTag === 'low_stock' ? ' 🔴' : '';
+      scoreHtml = `<span class="${cls}">${sc}</span>${lsBadge}`;
+    }
+
+    // Dias Ativo
+    let diasHtml;
+    if (dias === null) {
+      diasHtml = '—';
+    } else if (dias < 7) {
+      diasHtml = `<span class="score-muted">🟡 Em análise</span>`;
+    } else {
+      diasHtml = `${dias}d`;
+    }
+
+    const imgHtml = imgUrl
       ? `<img class="prod-img" src="${imgUrl}" alt="" loading="lazy">`
       : `<div class="prod-img-placeholder"></div>`;
 
@@ -599,12 +715,15 @@
           <span class="prod-nome" title="${p.produto}">${nomeDisplay}</span>
         </div>
       </td>
+      <td>${scoreHtml}</td>
       <td>
         <div class="estoque-cell">
           <span>${estText}</span>
           <div class="estoque-bar"><div class="estoque-fill ${estClass}" style="width:${estPct}%"></div></div>
         </div>
       </td>
+      <td>${diasHtml}</td>
+      <td>${vendas}</td>
       <td>${ctr.toFixed(1)}%</td>
       <td>${ctrs.toFixed(1)}%</td>
       <td>${vpm.toFixed(1)}</td>
@@ -640,7 +759,6 @@
 
   // ── Categorias no select ───────────────────────────────────────
   function populateCategoriaSelect(allCategories) {
-    // Usa a lista completa do endpoint /categories; complementa com o que vier do categoriaMap
     const fromMap = Object.values(categoriaMap).filter(c => c && c !== 'Sem categoria');
     const cats = [...new Set([...allCategories, ...fromMap])].sort();
     const sel  = document.getElementById('sel-categoria');
@@ -652,13 +770,18 @@
 
   // ── Export CSV ────────────────────────────────────────────────
   function exportCSV() {
-    const headers = ['Categoria','Produto','Estoque','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%'];
+    const headers = ['Categoria','Produto','Score','Estoque','Dias Ativo','Vendas (período)','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%'];
     const rows = filteredData.map(p => {
       const nome = (p.produto || '').toLowerCase();
+      const dias = getDiasAtivo(nome);
+      const scoreVal = p.score !== null && p.score !== undefined ? p.score : '';
       return [
         getCat(nome),
         p.produto,
+        scoreVal,
         getEst(nome) ?? '',
+        dias !== null ? dias : '',
+        parseInt(p.compras) || 0,
         pct(p.ctr).toFixed(2),
         pct(p.ctr_sessao).toFixed(2),
         pct(p.vpm).toFixed(2),
@@ -679,13 +802,15 @@
   }
 
   // ── Utilitários ────────────────────────────────────────────────
-  // GA4 envia nomes como "Produto (Cor, Tam)" — Nuvemshop retorna "Produto"
-  // Tenta lookup com nome completo e depois sem o sufixo entre parênteses
-  function normNome(nome) { return nome.replace(/\s*\([^)]*\)\s*$/, '').trim(); }
-  function getEst(nome)  { return estoqueMap[nome]    ?? estoqueMap[normNome(nome)]    ?? null; }
-  function getCat(nome)  { return categoriaMap[nome]  || categoriaMap[normNome(nome)]  || 'Sem categoria'; }
-  function getCats(nome) { return categoriasMap[nome] || categoriasMap[normNome(nome)] || []; }
-  function getImg(nome)  { return imageMap[nome]      || imageMap[normNome(nome)]      || null; }
+  function normNome(nome)  { return nome.replace(/\s*\([^)]*\)\s*$/, '').trim(); }
+  function getEst(nome)    { return estoqueMap[nome]    ?? estoqueMap[normNome(nome)]    ?? null; }
+  function getCat(nome)    { return categoriaMap[nome]  || categoriaMap[normNome(nome)]  || 'Sem categoria'; }
+  function getCats(nome)   { return categoriasMap[nome] || categoriasMap[normNome(nome)] || []; }
+  function getImg(nome)    { return imageMap[nome]      || imageMap[normNome(nome)]      || null; }
+  function getDiasAtivo(nome) {
+    const d = diasAtivoMap[nome] ?? diasAtivoMap[normNome(nome)];
+    return typeof d === 'number' ? d : null;
+  }
 
   function pct(v)  { return parseFloat(v) || 0; }
   function v(id)   { return document.getElementById(id)?.value?.trim() || ''; }
@@ -695,11 +820,11 @@
 
   function setLoading(on) {
     if (on) document.getElementById('tbody').innerHTML =
-      `<tr class="state-row"><td colspan="9"><span class="spinner"></span> Carregando dados...</td></tr>`;
+      `<tr class="state-row"><td colspan="12"><span class="spinner"></span> Carregando dados...</td></tr>`;
   }
   function showError(msg) {
     document.getElementById('tbody').innerHTML =
-      `<tr class="state-row"><td colspan="9">⚠ ${msg}</td></tr>`;
+      `<tr class="state-row"><td colspan="12">⚠ ${msg}</td></tr>`;
   }
 
   // ── Start ──────────────────────────────────────────────────────

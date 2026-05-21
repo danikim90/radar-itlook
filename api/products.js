@@ -31,11 +31,11 @@ export default async function handler(req, res) {
 
     let query, params;
     if (useRange) {
-      query  = SELECT + `WHERE data BETWEEN @de AND @ate GROUP BY produto ORDER BY impressoes DESC LIMIT 200`;
+      query  = SELECT + `WHERE data BETWEEN @de AND @ate GROUP BY produto ORDER BY impressoes DESC`;
       params = { de, ate };
     } else {
       const diasNum = Math.min(Math.max(parseInt(dias) || 30, 7), 90);
-      query  = SELECT + `WHERE data >= DATE_SUB(CURRENT_DATE(), INTERVAL @dias DAY) GROUP BY produto ORDER BY impressoes DESC LIMIT 200`;
+      query  = SELECT + `WHERE data >= DATE_SUB(CURRENT_DATE(), INTERVAL @dias DAY) GROUP BY produto ORDER BY impressoes DESC`;
       params = { dias: diasNum };
     }
 
