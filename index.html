@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IT Look · Radar de Performance</title>
+  <title>DASH</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -274,13 +274,30 @@
       vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- SIZE BREAKDOWN ---------- */
+    .size-panel-row td { padding: 0; background: #f9f9f7; border-bottom: 1px solid #e5e5e3; }
+    .size-panel {
+      padding: 10px 12px 10px 56px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .size-panel-label { font-size: 11px; color: #888; }
+    .size-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #fff; border: 1px solid #e0e0de;
+      border-radius: 20px; padding: 3px 10px; font-size: 12px;
+    }
+    .size-chip strong { font-weight: 600; }
+    .size-chip span { color: #888; font-size: 11px; }
+    .size-panel-msg { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; }
+    tr.row-selected { background: #f0f4ff !important; }
   </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo">IT Look <span>Radar de Performance</span></div>
+  <div class="logo">DASH</div>
   <div class="controls">
     <div class="period-btns">
       <button class="period-btn" data-dias="7"  onclick="selectPeriod(this)">7d</button>
@@ -708,7 +725,7 @@
 
     const nomeDisplay = (p.produto || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
 
-    return `<tr>
+    return `<tr data-produto="${(p.produto || '').replace(/"/g, '&quot;')}" onclick="toggleSizePanel(this)">
       <td>
         <div class="cell-produto">
           ${imgHtml}
@@ -825,6 +842,42 @@
   function showError(msg) {
     document.getElementById('tbody').innerHTML =
       `<tr class="state-row"><td colspan="12">⚠ ${msg}</td></tr>`;
+  }
+
+  // ── Size breakdown ─────────────────────────────────────────────
+  let activeSizePanelRow = null;
+
+  function toggleSizePanel(tr) {
+    if (activeSizePanelRow === tr) { closeSizePanel(); return; }
+    closeSizePanel();
+    activeSizePanelRow = tr;
+    tr.classList.add('row-selected');
+    const panelRow = document.createElement('tr');
+    panelRow.className = 'size-panel-row';
+    panelRow.id = 'active-size-panel';
+    panelRow.innerHTML = `<td colspan="12"><div class="size-panel"><span class="size-panel-msg"><span class="spinner"></span> Carregando tamanhos...</span></div></td>`;
+    tr.insertAdjacentElement('afterend', panelRow);
+    fetch(`/api/tamanhos-vendidos?produto=${encodeURIComponent(tr.dataset.produto)}&${getPeriodParam()}`)
+      .then(r => r.json())
+      .then(data => {
+        const div = document.querySelector('#active-size-panel .size-panel');
+        if (!div) return;
+        if (!Array.isArray(data) || !data.length) {
+          div.innerHTML = `<span class="size-panel-msg">Sem dados de tamanho no período.</span>`;
+          return;
+        }
+        div.innerHTML = `<span class="size-panel-label">Vendas por tamanho:</span>` +
+          data.map(x => `<div class="size-chip"><strong>${x.tamanho}</strong><span>${x.qtd} vend.</span></div>`).join('');
+      })
+      .catch(() => {
+        const div = document.querySelector('#active-size-panel .size-panel');
+        if (div) div.innerHTML = `<span class="size-panel-msg">Erro ao carregar.</span>`;
+      });
+  }
+
+  function closeSizePanel() {
+    document.getElementById('active-size-panel')?.remove();
+    if (activeSizePanelRow) { activeSizePanelRow.classList.remove('row-selected'); activeSizePanelRow = null; }
   }
 
   // ── Start ──────────────────────────────────────────────────────
