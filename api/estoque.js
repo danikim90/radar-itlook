@@ -85,6 +85,8 @@ export default async function handler(req, res) {
     const categoriaMap = {};
     const categoriasMap = {};
     const diasAtivoMap  = {};
+    const precoMap      = {};
+    const precoPromoMap = {};
 
     allProducts.forEach((product) => {
       const nome = (product.name?.pt || product.name?.en || product.name?.es || "").toLowerCase().trim();
@@ -96,6 +98,14 @@ export default async function handler(req, res) {
         return acc + (typeof s === "number" ? s : typeof s === "object" ? (s?.total ?? 0) : 0);
       }, 0);
       estoqueMap[nome] = estoqueTotal;
+
+      const prices = (product.variants || []).map(v => parseFloat(v.price) || 0).filter(x => x > 0);
+      if (prices.length) precoMap[nome] = Math.max(...prices);
+
+      const promoRaw = (product.variants || [])
+        .map(v => parseFloat(v.promotional_price) || 0)
+        .filter(x => x > 0);
+      if (promoRaw.length) precoPromoMap[nome] = Math.min(...promoRaw);
 
       // Todas as categorias do produto
       const cats = (product.categories || []).map((c) => {
@@ -131,6 +141,8 @@ export default async function handler(req, res) {
       categoriasMap,
       allCategories,
       diasAtivoMap,
+      precoMap,
+      precoPromoMap,
       total: allProducts.length,
     });
   } catch (error) {

@@ -124,7 +124,7 @@
     /* ---------- FILTER ROW ---------- */
     .filter-bar {
       display: grid;
-      grid-template-columns: 2fr 65px 70px 55px 65px 65px 78px 65px 88px 65px 75px 85px;
+      grid-template-columns: 2fr 65px 70px 55px 65px 65px 78px 65px 88px 65px 75px 85px 75px 100px;
       gap: 6px;
       padding: 8px 12px;
       border-bottom: 1px solid #f0f0ee;
@@ -179,6 +179,8 @@
     col.c-cliques  { width: 70px; }
     col.c-add      { width: 72px; }
     col.c-conv     { width: 78px; }
+    col.c-preco     { width: 82px; }
+    col.c-remarcado { width: 114px; }
 
     tbody tr { border-bottom: 1px solid #f0f0ee; transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
@@ -378,6 +380,8 @@
       <input type="text" id="f-cliques"   placeholder="Cliques ≥"      oninput="applyFilters()">
       <input type="text" id="f-add"       placeholder="Add% ≥"         oninput="applyFilters()">
       <input type="text" id="f-conv"      placeholder="Conv% ≥"        oninput="applyFilters()">
+      <div></div>
+      <div></div>
     </div>
 
     <table>
@@ -394,6 +398,8 @@
         <col class="c-cliques">
         <col class="c-add">
         <col class="c-conv">
+        <col class="c-preco">
+        <col class="c-remarcado">
       </colgroup>
       <thead>
         <tr>
@@ -409,10 +415,12 @@
           <th onclick="sortBy('cliques')">Cliques <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('add_rate')">Add% <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('conversion_rate')">Conv% <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('preco')">Preço orig. <span class="sort-icon">↕</span></th>
+          <th onclick="sortBy('precoPromo')">Remarcado <span class="sort-icon">↕</span></th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr class="state-row"><td colspan="12"><span class="spinner"></span> Carregando dados...</td></tr>
+        <tr class="state-row"><td colspan="14"><span class="spinner"></span> Carregando dados...</td></tr>
       </tbody>
     </table>
   </div>
@@ -425,6 +433,8 @@
   let categoriaMap = {};
   let imageMap     = {};
   let diasAtivoMap = {};
+  let precoMap      = {};
+  let precoPromoMap = {};
   let filteredData = [];
   let collapsedCats = {};
   let sortKey  = 'score';
@@ -497,6 +507,8 @@
       categoriaMap  = estoqueJson.categoriaMap  || {};
       categoriasMap = estoqueJson.categoriasMap || {};
       diasAtivoMap  = estoqueJson.diasAtivoMap  || {};
+      precoMap      = estoqueJson.precoMap      || {};
+      precoPromoMap = estoqueJson.precoPromoMap || {};
       imageMap      = imgJson.imageMap          || {};
 
       if (rawData.length === 0) {
@@ -621,6 +633,12 @@
         va = getDiasAtivo(nA) ?? 9999; vb = getDiasAtivo(nB) ?? 9999;
       } else if (sortKey === 'vendas') {
         va = parseInt(a.compras) || 0; vb = parseInt(b.compras) || 0;
+      } else if (sortKey === 'preco') {
+        va = precoMap[nA] ?? precoMap[normNome(nA)] ?? 0;
+        vb = precoMap[nB] ?? precoMap[normNome(nB)] ?? 0;
+      } else if (sortKey === 'precoPromo') {
+        va = precoPromoMap[nA] ?? precoPromoMap[normNome(nA)] ?? 0;
+        vb = precoPromoMap[nB] ?? precoPromoMap[normNome(nB)] ?? 0;
       } else {
         va = parseFloat(a[sortKey]) || 0; vb = parseFloat(b[sortKey]) || 0;
       }
@@ -645,7 +663,7 @@
   function renderTable() {
     const tbody = document.getElementById('tbody');
     if (!filteredData.length) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="12">Nenhum produto encontrado</td></tr>`;
+      tbody.innerHTML = `<tr class="state-row"><td colspan="14">Nenhum produto encontrado</td></tr>`;
       return;
     }
 
@@ -667,7 +685,7 @@
       const isCol = collapsedCats[cat];
       html += `
         <tr class="cat-header ${isCol ? 'cat-collapsed' : ''}" onclick="toggleCat('${cat.replace(/'/g,"\\'")}')">
-          <td colspan="12">
+          <td colspan="14">
             <span class="cat-chevron">▾</span>${cat}
             <span class="cat-count">${rows.length} produto${rows.length > 1 ? 's' : ''}</span>
           </td>
@@ -683,6 +701,10 @@
     const imgUrl  = getImg(nome);
     const estoque = getEst(nome);
     const dias    = getDiasAtivo(nome);
+    const preco      = precoMap[nome]      ?? precoMap[normNome(nome)]      ?? null;
+    const precoPromo = precoPromoMap[nome] ?? precoPromoMap[normNome(nome)] ?? null;
+    const desc = (preco && precoPromo && precoPromo < preco)
+      ? Math.round((1 - precoPromo / preco) * 100) : null;
     const ctr     = pct(p.ctr);
     const ctrs    = pct(p.ctr_sessao);
     const vpm     = pct(p.vpm);
@@ -748,6 +770,8 @@
       <td>${fmt(p.cliques)}</td>
       <td>${add.toFixed(1)}%</td>
       <td>${conv.toFixed(1)}%</td>
+      <td>${preco !== null ? fmtBRL(preco) : '—'}</td>
+      <td>${precoPromo !== null ? fmtBRL(precoPromo) + (desc !== null ? ` <span style="color:#c0392b;font-size:10px;font-weight:600">-${desc}%</span>` : '') : '—'}</td>
     </tr>`;
   }
 
@@ -819,6 +843,7 @@
   }
 
   // ── Utilitários ────────────────────────────────────────────────
+  function fmtBRL(v) { return 'R$ ' + parseFloat(v).toFixed(2).replace('.', ','); }
   function normNome(nome)  { return nome.replace(/\s*\([^)]*\)\s*$/, '').trim(); }
   function getEst(nome)    { return estoqueMap[nome]    ?? estoqueMap[normNome(nome)]    ?? null; }
   function getCat(nome)    { return categoriaMap[nome]  || categoriaMap[normNome(nome)]  || 'Sem categoria'; }
@@ -837,11 +862,11 @@
 
   function setLoading(on) {
     if (on) document.getElementById('tbody').innerHTML =
-      `<tr class="state-row"><td colspan="12"><span class="spinner"></span> Carregando dados...</td></tr>`;
+      `<tr class="state-row"><td colspan="14"><span class="spinner"></span> Carregando dados...</td></tr>`;
   }
   function showError(msg) {
     document.getElementById('tbody').innerHTML =
-      `<tr class="state-row"><td colspan="12">⚠ ${msg}</td></tr>`;
+      `<tr class="state-row"><td colspan="14">⚠ ${msg}</td></tr>`;
   }
 
   // ── Size breakdown ─────────────────────────────────────────────
