@@ -920,7 +920,6 @@
       <div class="curva-panel" id="tab-curva" style="display:none"></div>
     </td>`;
     tr.insertAdjacentElement('afterend', panelRow);
-    getBenchmarks(); // pré-carrega benchmarks em background
     fetch(`/api/tamanhos-vendidos?produto=${encodeURIComponent(tr.dataset.produto)}&${getPeriodParam()}`)
       .then(r => r.json())
       .then(data => {
@@ -967,29 +966,9 @@
   }
 
   // ── Curva de vendas ────────────────────────────────────────────
-  const _bmCache = { data: null, promise: null };
-
   function fetchVendasDia(produto) {
     return fetch(`/api/vendas-por-dia?produto=${encodeURIComponent(produto)}`)
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
-  }
-
-  function getBenchmarks() {
-    if (_bmCache.data)    return Promise.resolve(_bmCache.data);
-    if (_bmCache.promise) return _bmCache.promise;
-    _bmCache.promise = Promise.all([
-      fetchVendasDia('Calça Alfaiataria Valentina Preta'),
-      fetchVendasDia('Calça Alfaiataria Valentina Marrom'),
-      fetchVendasDia('Calça Alfaiataria Valentina Marinho'),
-      fetchVendasDia('Calça Alfaiataria Valentina Cinza Escuro'),
-    ]).then(([ap, m1, m2, m3]) => {
-      _bmCache.data = { ap, am: [m1, m2, m3] };
-      return _bmCache.data;
-    }).catch(e => {
-      _bmCache.promise = null; // permite retry na próxima abertura
-      throw e;
-    });
-    return _bmCache.promise;
   }
 
   function loadCurvaVendas(tr, container) {
@@ -998,10 +977,10 @@
       container.innerHTML = `<span class="size-panel-msg">Produto não identificado.</span>`;
       return;
     }
-    Promise.all([fetchVendasDia(produto), getBenchmarks()])
-      .then(([prodData, bench]) => {
+    fetchVendasDia(produto)
+      .then(prodData => {
         container.dataset.loaded = 'done';
-        renderCurvaChart(container, prodData, bench.ap, bench.am);
+        renderCurvaChart(container, prodData);
       })
       .catch(() => {
         container.innerHTML = `<span class="size-panel-msg">Erro ao carregar curva.</span>`;
@@ -1009,28 +988,15 @@
       });
   }
 
-  function renderCurvaChart(container, prodData, apData, amData) {
-    // Alinha pela posição no array (índice = dia desde ativação, dia 0 = criação)
-    const toPts = arr => (arr || []).map((d, i) => [i, d.vendas_acumuladas]);
-    const prodPts = toPts(prodData);
-    const apPts   = toPts(apData);
+  function renderCurvaChart(container, prodData) {
+    const prodPts = (prodData || []).map((d, i) => [i, d.vendas_acumuladas]);
 
-    // A- = média dos 3 benchmarks, alinhados por índice
-    const amArrays = (amData || []).filter(a => Array.isArray(a) && a.length > 0);
-    const amLen    = amArrays.length ? Math.max(...amArrays.map(a => a.length)) : 0;
-    const amPts    = [];
-    for (let i = 0; i < amLen; i++) {
-      const vals = amArrays.map(a => (a[i] ?? a[a.length - 1])?.vendas_acumuladas ?? 0);
-      amPts.push([i, vals.reduce((s, v) => s + v, 0) / amArrays.length]);
-    }
-
-    const allPts = [...prodPts, ...apPts, ...amPts];
-    if (!allPts.length) {
+    if (!prodPts.length) {
       container.innerHTML = `<span class="size-panel-msg">Sem dados de vendas para exibir.</span>`;
       return;
     }
-    const maxX = Math.max(...allPts.map(p => p[0]), 1);
-    const maxY = Math.max(...allPts.map(p => p[1]), 1);
+    const maxX = Math.max(...prodPts.map(p => p[0]), 1);
+    const maxY = Math.max(...prodPts.map(p => p[1]), 1);
 
     const W = 600, H = 170, ML = 44, MB = 26, MT = 10, MR = 10;
     const CW = W - ML - MR, CH = H - MT - MB;
@@ -1066,20 +1032,10 @@
       <line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT + CH}" stroke="#e0e0de" stroke-width="1"/>
       <line x1="${ML}" y1="${MT + CH}" x2="${ML + CW}" y2="${MT + CH}" stroke="#e0e0de" stroke-width="1"/>
       ${xGrid}
-      ${path(apPts,   '#555', '6,4', 1.5)}
-      ${path(amPts,   '#ccc', '6,4', 1.5)}
       ${path(prodPts, '#1a56db', null, 2)}
     </svg>`;
 
-    const mkLegLine = (color, dash) =>
-      `<svg width="22" height="10" style="flex-shrink:0"><line x1="0" y1="5" x2="22" y2="5" stroke="${color}" stroke-width="${dash ? 1.5 : 2}"${dash ? ` stroke-dasharray="${dash}"` : ''}/></svg>`;
-
-    container.innerHTML = `<div class="curva-chart-wrap">${svg}</div>
-      <div class="curva-legend">
-        <span>${mkLegLine('#1a56db', null)} Produto selecionado</span>
-        <span>${mkLegLine('#555', '6,4')} A+ (Valentina Preta)</span>
-        <span>${mkLegLine('#ccc', '6,4')} A− (média Marrom / Marinho / Cinza)</span>
-      </div>`;
+    container.innerHTML = `<div class="curva-chart-wrap">${svg}</div>`;
   }
 
   // ── Start ──────────────────────────────────────────────────────
