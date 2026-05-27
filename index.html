@@ -966,8 +966,9 @@
   }
 
   // ── Curva de vendas ────────────────────────────────────────────
-  function fetchVendasDia(produto) {
-    return fetch(`/api/vendas-por-dia?produto=${encodeURIComponent(produto)}`)
+  function fetchVendasDia(produto, dias) {
+    const qs = dias != null ? `&dias=${dias}` : '';
+    return fetch(`/api/vendas-por-dia?produto=${encodeURIComponent(produto)}${qs}`)
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
 
@@ -978,7 +979,7 @@
       return;
     }
     const diasAtivo = getDiasAtivo(produto.toLowerCase());
-    fetchVendasDia(produto)
+    fetchVendasDia(produto, diasAtivo)
       .then(prodData => {
         container.dataset.loaded = 'done';
         renderCurvaChart(container, prodData, diasAtivo);
