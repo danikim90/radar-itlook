@@ -294,6 +294,28 @@
     .size-panel-msg { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; }
     tr.row-selected { background: #f0f4ff !important; }
 
+    /* ---------- LOGIN ---------- */
+    body.locked .header, body.locked .summary, body.locked .table-container { display: none !important; }
+    #login-screen { display: none; min-height: 100vh; align-items: center; justify-content: center; background: #f5f5f3; }
+    body.locked #login-screen { display: flex !important; }
+    .login-card {
+      background: #fff; border: 1px solid #e5e5e3; border-radius: 14px;
+      padding: 36px 40px; width: 300px; display: flex; flex-direction: column;
+      gap: 14px; box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    .login-logo { font-size: 15px; font-weight: 600; text-align: center; letter-spacing: -0.3px; }
+    .login-logo small { color: #888; font-weight: 400; margin-left: 4px; font-size: 12px; }
+    .login-field { display: flex; flex-direction: column; gap: 5px; }
+    .login-field label { font-size: 11px; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+    .login-btn {
+      background: #1a1a1a; color: #fff; border: none; border-radius: 7px;
+      padding: 9px; font-size: 13px; font-family: inherit; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .login-btn:hover:not(:disabled) { background: #333; }
+    .login-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .login-error { font-size: 12px; color: #c0392b; text-align: center; min-height: 15px; }
+
     /* ---------- ACCORDION TABS ---------- */
     .panel-tabs-bar {
       display: flex;
@@ -1042,8 +1064,60 @@
     container.innerHTML = `<div class="curva-chart-wrap">${svg}</div>`;
   }
 
+  // ── Auth ──────────────────────────────────────────────────────
+  function showLoginScreen() {
+    document.body.classList.add('locked');
+    setTimeout(() => document.getElementById('login-pwd')?.focus(), 50);
+  }
+
+  async function submitLogin() {
+    const pwd = (document.getElementById('login-pwd')?.value || '').trim();
+    if (!pwd) return;
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-error');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    err.textContent = '';
+    try {
+      const r = await fetch('/api/auth-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        sessionStorage.setItem('radar_auth', '1');
+        document.body.classList.remove('locked');
+        loadData();
+      } else {
+        err.textContent = 'Senha incorreta.';
+        document.getElementById('login-pwd').value = '';
+        document.getElementById('login-pwd').focus();
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
+    } catch {
+      err.textContent = 'Erro de conexão. Tente novamente.';
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  }
+
   // ── Start ──────────────────────────────────────────────────────
-  loadData();
+  sessionStorage.getItem('radar_auth') === '1' ? loadData() : showLoginScreen();
 </script>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">DASH<small>· acesso restrito</small></div>
+    <div class="login-field">
+      <label for="login-pwd">Senha</label>
+      <input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')submitLogin()">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="submitLogin()">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
 </body>
 </html>
