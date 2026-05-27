@@ -977,10 +977,11 @@
       container.innerHTML = `<span class="size-panel-msg">Produto não identificado.</span>`;
       return;
     }
+    const diasAtivo = getDiasAtivo(produto.toLowerCase());
     fetchVendasDia(produto)
       .then(prodData => {
         container.dataset.loaded = 'done';
-        renderCurvaChart(container, prodData);
+        renderCurvaChart(container, prodData, diasAtivo);
       })
       .catch(() => {
         container.innerHTML = `<span class="size-panel-msg">Erro ao carregar curva.</span>`;
@@ -988,8 +989,10 @@
       });
   }
 
-  function renderCurvaChart(container, prodData) {
-    const prodPts = (prodData || []).map((d, i) => [i, d.vendas_acumuladas]);
+  function renderCurvaChart(container, prodData, diasAtivo) {
+    const raw = (prodData || []);
+    const data = (diasAtivo != null && diasAtivo + 1 < raw.length) ? raw.slice(0, diasAtivo + 1) : raw;
+    const prodPts = data.map((d, i) => [i, d.vendas_acumuladas]);
 
     if (!prodPts.length) {
       container.innerHTML = `<span class="size-panel-msg">Sem dados de vendas para exibir.</span>`;
