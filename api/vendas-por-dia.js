@@ -77,7 +77,6 @@ export default async function handler(req, res) {
       CROSS JOIN UNNEST(items) AS item
       WHERE event_name = 'purchase'
         AND _TABLE_SUFFIX >= @data_inicio
-        AND REGEXP_CONTAINS(_TABLE_SUFFIX, r'^[0-9]{8}$')
         AND LOWER(TRIM(REGEXP_REPLACE(item.item_name, r'\\s*\\([^)]*\\)\\s*$', ''))) = LOWER(TRIM(@produto))
       GROUP BY data
       ORDER BY data
