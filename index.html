@@ -811,7 +811,7 @@
 
   // ── Export CSV ────────────────────────────────────────────────
   function exportCSV() {
-    const headers = ['Categoria','Produto','Score','Estoque','Dias Ativo','Vendas (período)','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%'];
+    const headers = ['Categoria','Produto','Score','Estoque','Dias Ativo','Vendas (período)','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%','Preço ori.','Remarcado'];
     const rows = filteredData.map(p => {
       const nome = (p.produto || '').toLowerCase();
       const dias = getDiasAtivo(nome);
@@ -830,6 +830,8 @@
         p.cliques,
         pct(p.add_rate).toFixed(2),
         pct(p.conversion_rate).toFixed(2),
+        precoMap[nome] != null ? fmtBRL(precoMap[nome]) : '',
+        precoPromoMap[nome] != null ? fmtBRL(precoPromoMap[nome]) : '',
       ];
     });
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
