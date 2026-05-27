@@ -293,6 +293,35 @@
     .size-chip span { color: #888; font-size: 11px; }
     .size-panel-msg { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; }
     tr.row-selected { background: #f0f4ff !important; }
+
+    /* ---------- ACCORDION TABS ---------- */
+    .panel-tabs-bar {
+      display: flex;
+      gap: 3px;
+      padding: 8px 12px 0 56px;
+      background: #f9f9f7;
+      border-bottom: 1px solid #e5e5e3;
+    }
+    .panel-tab-btn {
+      border: 1px solid #e0e0de;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      padding: 5px 14px;
+      font-size: 11px;
+      font-family: inherit;
+      background: #f0f0ee;
+      color: #888;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: -1px;
+    }
+    .panel-tab-btn.active { background: #fff; color: #1a1a1a; font-weight: 500; border-color: #e0e0de; border-bottom-color: #fff; }
+    .panel-tab-btn:hover:not(.active) { background: #e8e8e6; }
+
+    .curva-panel { padding: 10px 12px 8px 12px; background: #f9f9f7; }
+    .curva-chart-wrap { max-width: 720px; }
+    .curva-legend { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; padding: 5px 0 2px; font-size: 11px; color: #666; }
+    .curva-legend span { display: flex; align-items: center; gap: 5px; }
   </style>
 </head>
 <body>
@@ -882,12 +911,20 @@
     const panelRow = document.createElement('tr');
     panelRow.className = 'size-panel-row';
     panelRow.id = 'active-size-panel';
-    panelRow.innerHTML = `<td colspan="12"><div class="size-panel"><span class="size-panel-msg"><span class="spinner"></span> Carregando tamanhos...</span></div></td>`;
+    panelRow.innerHTML = `<td colspan="14">
+      <div class="panel-tabs-bar">
+        <button class="panel-tab-btn active" onclick="showPanelTab('tamanhos')">Tamanhos</button>
+        <button class="panel-tab-btn" onclick="showPanelTab('curva')">Curva de vendas</button>
+      </div>
+      <div class="size-panel" id="tab-tamanhos"><span class="size-panel-msg"><span class="spinner"></span> Carregando tamanhos...</span></div>
+      <div class="curva-panel" id="tab-curva" style="display:none"></div>
+    </td>`;
     tr.insertAdjacentElement('afterend', panelRow);
+    getBenchmarks(); // pré-carrega benchmarks em background
     fetch(`/api/tamanhos-vendidos?produto=${encodeURIComponent(tr.dataset.produto)}&${getPeriodParam()}`)
       .then(r => r.json())
       .then(data => {
-        const div = document.querySelector('#active-size-panel .size-panel');
+        const div = document.getElementById('tab-tamanhos');
         if (!div) return;
         if (!Array.isArray(data) || !data.length) {
           div.innerHTML = `<span class="size-panel-msg">Sem dados de tamanho no período.</span>`;
@@ -897,7 +934,7 @@
           data.map(x => `<div class="size-chip"><strong>${x.tamanho}</strong><span>${x.qtd} vend.</span></div>`).join('');
       })
       .catch(() => {
-        const div = document.querySelector('#active-size-panel .size-panel');
+        const div = document.getElementById('tab-tamanhos');
         if (div) div.innerHTML = `<span class="size-panel-msg">Erro ao carregar.</span>`;
       });
   }
@@ -905,6 +942,144 @@
   function closeSizePanel() {
     document.getElementById('active-size-panel')?.remove();
     if (activeSizePanelRow) { activeSizePanelRow.classList.remove('row-selected'); activeSizePanelRow = null; }
+  }
+
+  // ── Abas do accordion ─────────────────────────────────────────
+  function showPanelTab(tabName) {
+    const tabTamanhos = document.getElementById('tab-tamanhos');
+    const tabCurva    = document.getElementById('tab-curva');
+    if (!tabTamanhos || !tabCurva) return;
+    const btns = document.querySelectorAll('#active-size-panel .panel-tab-btn');
+    if (tabName === 'tamanhos') {
+      tabTamanhos.style.display = '';
+      tabCurva.style.display    = 'none';
+      btns.forEach((b, i) => b.classList.toggle('active', i === 0));
+    } else {
+      tabTamanhos.style.display = 'none';
+      tabCurva.style.display    = '';
+      btns.forEach((b, i) => b.classList.toggle('active', i === 1));
+      if (!tabCurva.dataset.loaded) {
+        tabCurva.dataset.loaded = 'loading';
+        tabCurva.innerHTML = `<span class="size-panel-msg"><span class="spinner"></span> Carregando curva...</span>`;
+        loadCurvaVendas(activeSizePanelRow, tabCurva);
+      }
+    }
+  }
+
+  // ── Curva de vendas ────────────────────────────────────────────
+  const _bmCache = { data: null, promise: null };
+
+  function fetchVendasDia(produto) {
+    return fetch(`/api/vendas-por-dia?produto=${encodeURIComponent(produto)}`)
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+
+  function getBenchmarks() {
+    if (_bmCache.data)    return Promise.resolve(_bmCache.data);
+    if (_bmCache.promise) return _bmCache.promise;
+    _bmCache.promise = Promise.all([
+      fetchVendasDia('Calça Alfaiataria Valentina Preta'),
+      fetchVendasDia('Calça Alfaiataria Valentina Marrom'),
+      fetchVendasDia('Calça Alfaiataria Valentina Marinho'),
+      fetchVendasDia('Calça Alfaiataria Valentina Cinza Escuro'),
+    ]).then(([ap, m1, m2, m3]) => {
+      _bmCache.data = { ap, am: [m1, m2, m3] };
+      return _bmCache.data;
+    }).catch(e => {
+      _bmCache.promise = null; // permite retry na próxima abertura
+      throw e;
+    });
+    return _bmCache.promise;
+  }
+
+  function loadCurvaVendas(tr, container) {
+    const produto = tr?.dataset?.produto;
+    if (!produto) {
+      container.innerHTML = `<span class="size-panel-msg">Produto não identificado.</span>`;
+      return;
+    }
+    Promise.all([fetchVendasDia(produto), getBenchmarks()])
+      .then(([prodData, bench]) => {
+        container.dataset.loaded = 'done';
+        renderCurvaChart(container, prodData, bench.ap, bench.am);
+      })
+      .catch(() => {
+        container.innerHTML = `<span class="size-panel-msg">Erro ao carregar curva.</span>`;
+        delete container.dataset.loaded;
+      });
+  }
+
+  function renderCurvaChart(container, prodData, apData, amData) {
+    // Alinha pela posição no array (índice = dia desde ativação, dia 0 = criação)
+    const toPts = arr => (arr || []).map((d, i) => [i, d.vendas_acumuladas]);
+    const prodPts = toPts(prodData);
+    const apPts   = toPts(apData);
+
+    // A- = média dos 3 benchmarks, alinhados por índice
+    const amArrays = (amData || []).filter(a => Array.isArray(a) && a.length > 0);
+    const amLen    = amArrays.length ? Math.max(...amArrays.map(a => a.length)) : 0;
+    const amPts    = [];
+    for (let i = 0; i < amLen; i++) {
+      const vals = amArrays.map(a => (a[i] ?? a[a.length - 1])?.vendas_acumuladas ?? 0);
+      amPts.push([i, vals.reduce((s, v) => s + v, 0) / amArrays.length]);
+    }
+
+    const allPts = [...prodPts, ...apPts, ...amPts];
+    if (!allPts.length) {
+      container.innerHTML = `<span class="size-panel-msg">Sem dados de vendas para exibir.</span>`;
+      return;
+    }
+    const maxX = Math.max(...allPts.map(p => p[0]), 1);
+    const maxY = Math.max(...allPts.map(p => p[1]), 1);
+
+    const W = 600, H = 170, ML = 44, MB = 26, MT = 10, MR = 10;
+    const CW = W - ML - MR, CH = H - MT - MB;
+
+    const sx = x => ML + (x / maxX) * CW;
+    const sy = y => MT + CH - (y / maxY) * CH;
+
+    const path = (pts, color, dash, width) => {
+      if (!pts.length) return '';
+      const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx(p[0]).toFixed(1)} ${sy(p[1]).toFixed(1)}`).join(' ');
+      return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
+    };
+
+    // Grade Y
+    const yTicks = 4;
+    const yGrid  = Array.from({ length: yTicks + 1 }, (_, i) => Math.round(maxY * i / yTicks))
+      .map(v => `
+        <line x1="${ML}" y1="${sy(v).toFixed(1)}" x2="${ML + CW}" y2="${sy(v).toFixed(1)}" stroke="#f0f0ee" stroke-width="1"/>
+        <text x="${ML - 5}" y="${sy(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#bbb">${v}</text>
+      `).join('');
+
+    // Labels X (a cada ~30 dias, máx 6 labels)
+    const xStep = Math.ceil(maxX / 5 / 10) * 10 || 1;
+    const xTicks = [];
+    for (let i = 0; i <= maxX; i += xStep) xTicks.push(i);
+    if (xTicks[xTicks.length - 1] < maxX) xTicks.push(maxX);
+    const xGrid = xTicks.map(d =>
+      `<text x="${sx(d).toFixed(1)}" y="${MT + CH + 16}" text-anchor="middle" font-size="9" fill="#bbb">${d}d</text>`
+    ).join('');
+
+    const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;overflow:visible">
+      ${yGrid}
+      <line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT + CH}" stroke="#e0e0de" stroke-width="1"/>
+      <line x1="${ML}" y1="${MT + CH}" x2="${ML + CW}" y2="${MT + CH}" stroke="#e0e0de" stroke-width="1"/>
+      ${xGrid}
+      ${path(apPts,   '#555', '6,4', 1.5)}
+      ${path(amPts,   '#ccc', '6,4', 1.5)}
+      ${path(prodPts, '#1a56db', null, 2)}
+    </svg>`;
+
+    const mkLegLine = (color, dash) =>
+      `<svg width="22" height="10" style="flex-shrink:0"><line x1="0" y1="5" x2="22" y2="5" stroke="${color}" stroke-width="${dash ? 1.5 : 2}"${dash ? ` stroke-dasharray="${dash}"` : ''}/></svg>`;
+
+    container.innerHTML = `<div class="curva-chart-wrap">${svg}</div>
+      <div class="curva-legend">
+        <span>${mkLegLine('#1a56db', null)} Produto selecionado</span>
+        <span>${mkLegLine('#555', '6,4')} A+ (Valentina Preta)</span>
+        <span>${mkLegLine('#ccc', '6,4')} A− (média Marrom / Marinho / Cinza)</span>
+      </div>`;
   }
 
   // ── Start ──────────────────────────────────────────────────────
