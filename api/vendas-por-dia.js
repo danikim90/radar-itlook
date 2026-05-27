@@ -71,12 +71,13 @@ export default async function handler(req, res) {
 
     const query = `
       SELECT
-        FORMAT_DATE('%Y-%m-%d', PARSE_DATE('%Y%m%d', _TABLE_SUFFIX)) AS data,
+        FORMAT_DATE('%Y-%m-%d', PARSE_DATE('%Y%m%d', event_date)) AS data,
         COUNT(*) AS vendas_dia
       FROM \`itlook-analytics.analytics_395902084.events_*\`
       CROSS JOIN UNNEST(items) AS item
       WHERE event_name = 'purchase'
         AND _TABLE_SUFFIX >= @data_inicio
+        AND REGEXP_CONTAINS(_TABLE_SUFFIX, r'^[0-9]{8}$')
         AND LOWER(TRIM(REGEXP_REPLACE(item.item_name, r'\\s*\\([^)]*\\)\\s*$', ''))) = LOWER(TRIM(@produto))
       GROUP BY data
       ORDER BY data
