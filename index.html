@@ -459,7 +459,7 @@
           <th onclick="sortBy('estoque')">Estoque <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('diasAtivo')">Dias Ativo <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('vendas')">Vendas <span class="sort-icon">↕</span></th>
-          <th>Vendas/dia</th>
+          <th onclick="sortBy('vendasPorDia')">Vendas/dia <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('ctr')">CTR% <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('ctr_sessao')">CTR/Ses <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('vpm')">VPM <span class="sort-icon">↕</span></th>
@@ -694,6 +694,10 @@
         va = getDiasAtivo(nA) ?? 9999; vb = getDiasAtivo(nB) ?? 9999;
       } else if (sortKey === 'vendas') {
         va = parseInt(a.compras) || 0; vb = parseInt(b.compras) || 0;
+      } else if (sortKey === 'vendasPorDia') {
+        const dias = getPeriodDias();
+        va = (parseInt(a.compras) || 0) / dias;
+        vb = (parseInt(b.compras) || 0) / dias;
       } else if (sortKey === 'preco') {
         va = precoMap[nA] ?? precoMap[normNome(nA)] ?? 0;
         vb = precoMap[nB] ?? precoMap[normNome(nB)] ?? 0;
