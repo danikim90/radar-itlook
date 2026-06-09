@@ -878,7 +878,7 @@
 
   // ── Export CSV ────────────────────────────────────────────────
   function exportCSV() {
-    const headers = ['Categoria','Produto','Score','Estoque','Dias Ativo','Vendas (período)','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%','Preço ori.','Remarcado'];
+    const headers = ['Categoria','Produto','Score','Estoque','Dias Ativo','Vendas (período)','Vendas/dia','CTR%','CTR/Sessão','VPM','Impressões','Cliques','Add%','Conv%','Preço ori.','Remarcado'];
     const rows = filteredData.map(p => {
       const nome = (p.produto || '').toLowerCase();
       const dias = getDiasAtivo(nome);
@@ -890,6 +890,7 @@
         getEst(nome) ?? '',
         dias !== null ? dias : '',
         parseInt(p.compras) || 0,
+        ((parseInt(p.compras) || 0) / getPeriodDias()).toFixed(1),
         pct(p.ctr).toFixed(2),
         pct(p.ctr_sessao).toFixed(2),
         pct(p.vpm).toFixed(2),
