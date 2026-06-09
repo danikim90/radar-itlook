@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis';
 import { Resend } from 'resend';
 
 const KV_KEY = 'estoque:snapshot';
-const EMAIL_TO = 'itlookoficial@gmail.com';
+const EMAIL_TO = 'sac@itlook.com.br';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://radar-itlook.vercel.app');
