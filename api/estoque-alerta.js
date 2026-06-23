@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis';
 import { Resend } from 'resend';
 
 const KV_KEY = 'estoque:snapshot';
-const EMAIL_TO = 'itlookoficial@gmail.com';
+const EMAIL_TO = process.env.ALERT_EMAIL_TO || 'sac@itlook.com.br';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://radar-itlook.vercel.app');
@@ -100,26 +100,31 @@ export default async function handler(req, res) {
         </tr>`
       ).join('');
 
-      await resend.emails.send({
-        from: 'Radar ITLook <onboarding@resend.dev>',
-        to: EMAIL_TO,
-        subject: `Estoque zerado: ${novosZerados.length} produto(s)`,
-        html: `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 0;">
-            <p style="font-size:13px;font-weight:600;letter-spacing:2px;color:#888;margin:0 0 24px;">RADAR ITLOOK · ALERTA DE ESTOQUE</p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #eee;">
-              <thead>
-                <tr style="background:#f7f6f3;">
-                  <th style="padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:600;letter-spacing:1px;border-bottom:1px solid #eee;">PRODUTO</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:600;letter-spacing:1px;border-bottom:1px solid #eee;">TAMANHOS ZERADOS</th>
-                </tr>
-              </thead>
-              <tbody>${linhas}</tbody>
-            </table>
-            <p style="font-size:11px;color:#bbb;margin:24px 0 0;">Gerado automaticamente · ${new Date().toLocaleDateString('pt-BR')}</p>
-          </div>
-        `
-      });
+      try {
+        await resend.emails.send({
+          from: 'Radar ITLook <radar@itlook.com.br>',
+          to: EMAIL_TO,
+          subject: `Estoque zerado: ${novosZerados.length} produto(s)`,
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 0;">
+              <p style="font-size:13px;font-weight:600;letter-spacing:2px;color:#888;margin:0 0 24px;">RADAR ITLOOK · ALERTA DE ESTOQUE</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #eee;">
+                <thead>
+                  <tr style="background:#f7f6f3;">
+                    <th style="padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:600;letter-spacing:1px;border-bottom:1px solid #eee;">PRODUTO</th>
+                    <th style="padding:10px 16px;text-align:left;font-size:11px;color:#888;font-weight:600;letter-spacing:1px;border-bottom:1px solid #eee;">TAMANHOS ZERADOS</th>
+                  </tr>
+                </thead>
+                <tbody>${linhas}</tbody>
+              </table>
+              <p style="font-size:11px;color:#bbb;margin:24px 0 0;">Gerado automaticamente · ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+          `
+        });
+      } catch (emailError) {
+        console.error('Falha ao enviar e-mail de alerta de estoque:', emailError);
+        throw new Error(`Falha ao enviar e-mail: ${emailError.message}`);
+      }
     }
 
     // 5. Salvar novo snapshot
