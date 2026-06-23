@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis';
 import { Resend } from 'resend';
 
 const KV_KEY = 'estoque:snapshot';
-const EMAIL_TO = process.env.ALERT_EMAIL_TO || 'sac@itlook.com.br';
+const EMAIL_TO = process.env.ALERT_EMAIL_TO || 'itlookoficial@gmail.com';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://radar-itlook.vercel.app');
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
 
       try {
         await resend.emails.send({
-          from: 'Radar ITLook <radar@itlook.com.br>',
+          from: 'Radar ITLook <onboarding@resend.dev>',
           to: EMAIL_TO,
           subject: `Estoque zerado: ${novosZerados.length} produto(s)`,
           html: `
