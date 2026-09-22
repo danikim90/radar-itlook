@@ -15,23 +15,64 @@ export default async function handler(req, res) {
     let allProducts = [];
     let page = 1;
     let hasMore = true;
+    // Se a Nuvemshop falhar, não temos dado confiável: não mexe no snapshot nem manda alerta
+    let falhaNuvemshop = null;
 
     while (hasMore) {
-      const response = await fetch(
-        `https://api.nuvemshop.com.br/v1/${STORE_ID}/products?fields=id,name,images,variants,categories&per_page=200&page=${page}&published=true`,
-        {
-          headers: {
-            'Authentication': `bearer ${ACCESS_TOKEN}`,
-            'User-Agent': 'ITLook Radar (contato@itlook.com.br)',
-            'Content-Type': 'application/json'
+      let response, products;
+      try {
+        response = await fetch(
+          `https://api.nuvemshop.com.br/v1/${STORE_ID}/products?fields=id,name,images,variants,categories&per_page=200&page=${page}&published=true`,
+          {
+            headers: {
+              'Authentication': `bearer ${ACCESS_TOKEN}`,
+              'User-Agent': 'ITLook Radar (contato@itlook.com.br)',
+              'Content-Type': 'application/json'
+            },
+            signal: AbortSignal.timeout(20000)
           }
-        }
-      );
-      const products = await response.json();
+        );
+        // 404 depois da página 1 = passou da última página ("Last page is N"), fim normal da lista
+        if (response.status === 404 && page > 1) { hasMore = false; break; }
+        products = await response.json();
+      } catch (fetchError) {
+        falhaNuvemshop = `página ${page}: ${response ? `HTTP ${response.status} ` : ''}${fetchError.name === 'TimeoutError' ? 'timeout após 20s' : fetchError.message}`;
+        break;
+      }
+      if (!response.ok || !Array.isArray(products) || (page === 1 && products.length === 0)) {
+        falhaNuvemshop = `página ${page}: HTTP ${response.status} ${JSON.stringify(products).slice(0, 300)}`;
+        break;
+      }
       if (!Array.isArray(products) || products.length === 0) { hasMore = false; break; }
       allProducts = [...allProducts, ...products];
       page++;
       if (products.length < 200) hasMore = false;
+    }
+
+    if (falhaNuvemshop) {
+      console.error('Falha ao buscar produtos na Nuvemshop, snapshot mantido:', falhaNuvemshop);
+      let avisoEnviado = false;
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { error } = await resend.emails.send({
+          from: 'Radar ITLook <onboarding@resend.dev>',
+          to: EMAIL_TO,
+          subject: 'Radar não rodou hoje — Nuvemshop fora do ar',
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px 0;">
+              <p style="font-size:13px;font-weight:600;letter-spacing:2px;color:#888;margin:0 0 24px;">RADAR ITLOOK · ALERTA DE ESTOQUE</p>
+              <p style="font-size:14px;color:#1a1a1a;">O alerta de estoque zerado não rodou hoje porque a Nuvemshop não respondeu corretamente. A base de comparação foi mantida, e amanhã a checagem volta ao normal.</p>
+              <p style="font-size:12px;color:#888;">${falhaNuvemshop.replace(/</g, '&lt;')}</p>
+              <p style="font-size:11px;color:#bbb;margin:24px 0 0;">Gerado automaticamente · ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+          `
+        });
+        if (error) throw new Error(error.message);
+        avisoEnviado = true;
+      } catch (avisoError) {
+        console.error('Falha ao enviar e-mail de aviso da Nuvemshop:', avisoError);
+      }
+      return res.status(502).json({ error: `Nuvemshop: ${falhaNuvemshop}`, snapshotMantido: true, avisoEnviado });
     }
 
     // 2. Ignorar produtos da categoria SALE
