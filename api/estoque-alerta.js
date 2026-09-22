@@ -142,7 +142,7 @@ export default async function handler(req, res) {
       ).join('');
 
       try {
-        await resend.emails.send({
+        const { error } = await resend.emails.send({
           from: 'Radar ITLook <onboarding@resend.dev>',
           to: EMAIL_TO,
           subject: `Estoque zerado: ${novosZerados.length} produto(s)`,
@@ -162,6 +162,8 @@ export default async function handler(req, res) {
             </div>
           `
         });
+        // Resend v6 não lança exceção em falha de envio, devolve { error }: sem e-mail entregue, não avança o snapshot
+        if (error) throw new Error(`${error.statusCode ?? ''} ${error.name}: ${error.message}`.trim());
       } catch (emailError) {
         console.error('Falha ao enviar e-mail de alerta de estoque:', emailError);
         throw new Error(`Falha ao enviar e-mail: ${emailError.message}`);
